@@ -1,4 +1,5 @@
-import { EventStep } from '../types';
+type EventStep = { step: string; ms: number; caption: string };
+
 
 // Hardcoded event log for Phase 1 (Fake Demo)
 // This will be replaced by real SSE events from Apollo Server in Phase 3
