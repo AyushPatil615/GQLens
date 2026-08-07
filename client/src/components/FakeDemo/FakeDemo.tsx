@@ -1,44 +1,49 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FAKE_EVENT_LOG } from '../../data/fakeData';
+import { FAKE_EVENT_LOG, STEP_DIALOGUES } from '../../data/fakeData';
 import { PipelineVisualizer } from '../PipelineVisualizer/PipelineVisualizer';
 import { ExecutionTimeline } from '../ExecutionTimeline/ExecutionTimeline';
+import { StepDialoguePanel } from './StepDialoguePanel';
 
 type RunPhase = 'idle' | 'running' | 'complete';
 
-const STEP_DELAY_MS = 950; // ms between each step firing
+const STEP_DELAY_MS = 950;
 
 const COMPLETE_CAPTION =
   'All done! The query traveled through every resolver and came back as JSON — in under 50ms.';
 
 export function FakeDemo() {
-  const [runPhase, setRunPhase]         = useState<RunPhase>('idle');
+  const [runPhase, setRunPhase]               = useState<RunPhase>('idle');
   const [activeStepIndex, setActiveStepIndex] = useState<number>(-1);
+  const [selectedStepId, setSelectedStepId]   = useState<string | null>(null);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const steps  = FAKE_EVENT_LOG;
+  const steps   = FAKE_EVENT_LOG;
   const totalMs = steps.reduce((sum, s) => sum + s.ms, 0);
 
   const isRunning  = runPhase === 'running';
   const isComplete = runPhase === 'complete';
 
-  // Which step is currently animating
   const activeStep =
     !isComplete && activeStepIndex >= 0 && activeStepIndex < steps.length
       ? steps[activeStepIndex]
       : null;
 
-  // Caption shown in the timeline
   const caption = isComplete ? COMPLETE_CAPTION : (activeStep?.caption ?? '');
 
-  // Completed step IDs for the pipeline
   const completedStepIds: string[] = isComplete
     ? steps.map(s => s.step)
     : Array.from({ length: Math.max(0, activeStepIndex) }, (_, i) => steps[i].step);
 
   const activeStepId = isComplete ? null : (activeStep?.step ?? null);
 
-  // ─── Animation control ──────────────────────────────────────────
+  // Find the dialogue data for the active step (during run) or selected step (after run)
+  const activeDialogue =
+    isComplete
+      ? (selectedStepId ? STEP_DIALOGUES.find(d => d.step === selectedStepId) ?? null : null)
+      : (!isComplete && activeStep ? STEP_DIALOGUES.find(d => d.step === activeStep.step) ?? null : null);
+
+  // ─── Animation control ────────────────────────────────────────────
   function clearAllTimeouts() {
     timeoutsRef.current.forEach(clearTimeout);
     timeoutsRef.current = [];
@@ -57,27 +62,31 @@ export function FakeDemo() {
       timeoutsRef.current.push(t);
     });
 
-    // Mark complete after last step finishes
     const doneTimeout = setTimeout(() => {
       setRunPhase('complete');
-      setActiveStepIndex(steps.length); // past last → all bars filled
+      setActiveStepIndex(steps.length);
     }, steps.length * STEP_DELAY_MS);
     timeoutsRef.current.push(doneTimeout);
+  }
+
+  function handleStepClick(stepId: string) {
+    if (isComplete) setSelectedStepId(prev => prev === stepId ? null : stepId);
   }
 
   function reset() {
     clearAllTimeouts();
     setRunPhase('idle');
     setActiveStepIndex(-1);
+    setSelectedStepId(null);
   }
 
-  // ─── Render ─────────────────────────────────────────────────────
+  // ─── Render ───────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-base)' }}>
 
       {/* ── Header ── */}
       <header style={{
-        padding: '14px 32px',
+        padding: '14px 28px',
         borderBottom: '1px solid var(--border-subtle)',
         display: 'flex', alignItems: 'center', gap: 12,
         background: 'var(--bg-surface)',
@@ -104,14 +113,14 @@ export function FakeDemo() {
       </header>
 
       {/* ── Hero intro ── */}
-      <div style={{ textAlign: 'center', padding: '44px 32px 28px' }}>
+      <div style={{ textAlign: 'center', padding: '36px 28px 20px' }}>
         <motion.h1
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           style={{
-            fontSize: 'clamp(1.75rem, 4vw, 2.6rem)',
-            fontWeight: 700, marginBottom: 14,
+            fontSize: 'clamp(1.6rem, 4vw, 2.4rem)',
+            fontWeight: 700, marginBottom: 12,
             background: 'linear-gradient(135deg, #f1f5f9 30%, #94a3b8 100%)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           }}
@@ -119,27 +128,28 @@ export function FakeDemo() {
           Watch your query execute
         </motion.h1>
         <motion.p
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          style={{ fontSize: 15.5, color: 'var(--text-secondary)', maxWidth: 500, margin: '0 auto', lineHeight: 1.7 }}
+          style={{ fontSize: 15, color: 'var(--text-secondary)', maxWidth: 480, margin: '0 auto', lineHeight: 1.7 }}
         >
-          Click <strong style={{ color: 'var(--text-primary)' }}>Run Query</strong> to see exactly what
-          happens inside GraphQL — step by step, explained in plain English.
+          Click <strong style={{ color: 'var(--text-primary)' }}>Run Query</strong> to see every step explained —
+          what happens, what it takes, and why it matters.
         </motion.p>
       </div>
 
-      {/* ── Main two-column layout ── */}
+      {/* ── Three-column layout ── */}
       <div style={{
-        display: 'flex', gap: 20, padding: '0 28px 24px',
-        maxWidth: 1080, margin: '0 auto', width: '100%',
+        display: 'flex', gap: 16, padding: '0 24px 20px',
+        maxWidth: 1200, margin: '0 auto', width: '100%',
         flexWrap: 'wrap',
+        alignItems: 'flex-start',
       }}>
 
-        {/* ── LEFT: Query Panel ── */}
-        <div style={{ flex: '0 0 330px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* ── COL 1: Query Panel ── */}
+        <div style={{ flex: '0 0 290px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-          {/* Query editor card */}
+          {/* Query card */}
           <motion.div
             animate={{
               borderColor: isRunning
@@ -161,7 +171,7 @@ export function FakeDemo() {
               overflow: 'hidden',
             }}
           >
-            {/* Fake editor title bar */}
+            {/* Editor title bar */}
             <div style={{
               padding: '9px 14px',
               borderBottom: '1px solid rgba(255,255,255,0.06)',
@@ -177,11 +187,9 @@ export function FakeDemo() {
                 query.graphql
               </span>
             </div>
-
-            {/* Query syntax */}
             <pre style={{
-              margin: 0, padding: '20px 22px',
-              fontFamily: 'var(--font-mono)', fontSize: 13.5,
+              margin: 0, padding: '18px 20px',
+              fontFamily: 'var(--font-mono)', fontSize: 13,
               lineHeight: 1.8, color: '#64748b', overflow: 'auto',
               background: 'transparent',
             }}>
@@ -198,7 +206,7 @@ export function FakeDemo() {
             </pre>
           </motion.div>
 
-          {/* Run button */}
+          {/* Run / Reset button */}
           <motion.button
             whileHover={{ scale: isRunning ? 1 : 1.02 }}
             whileTap={{ scale: isRunning ? 1 : 0.96 }}
@@ -214,7 +222,7 @@ export function FakeDemo() {
                 ? 'linear-gradient(135deg, #22c55e, #4ade80)'
                 : 'linear-gradient(135deg, #e535ab, #7c5cfc)',
               color: isRunning ? 'rgba(229,53,171,0.5)' : '#fff',
-              fontSize: 14.5, fontWeight: 600,
+              fontSize: 14, fontWeight: 600,
               fontFamily: 'var(--font-sans)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               boxShadow: isRunning
@@ -231,19 +239,13 @@ export function FakeDemo() {
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                   style={{ display: 'inline-block' }}
-                >
-                  ⟳
-                </motion.span>
+                >⟳</motion.span>
                 Executing…
               </>
-            ) : isComplete ? (
-              '↺  Run Again'
-            ) : (
-              '▶  Run Query'
-            )}
+            ) : isComplete ? '↺  Run Again' : '▶  Run Query'}
           </motion.button>
 
-          {/* Step progress pills */}
+          {/* Step progress badges */}
           <AnimatePresence>
             {(isRunning || isComplete) && (
               <motion.div
@@ -253,12 +255,12 @@ export function FakeDemo() {
                 style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}
               >
                 {steps.map((step, index) => {
-                  const stepColors: Record<string, string> = {
+                  const colors: Record<string, string> = {
                     'parse': '#38bdf8', 'validate': '#a78bfa',
                     'resolve:Student': '#e535ab', 'db:query': '#fb923c',
                     'resolve:courses': '#e535ab', 'respond': '#4ade80',
                   };
-                  const c = stepColors[step.step] || '#94a3b8';
+                  const c = colors[step.step] || '#94a3b8';
                   const done   = isComplete || index < activeStepIndex;
                   const active = !isComplete && index === activeStepIndex;
                   return (
@@ -283,46 +285,54 @@ export function FakeDemo() {
           </AnimatePresence>
         </div>
 
-        {/* ── RIGHT: Pipeline Visualizer ── */}
+        {/* ── COL 2: Pipeline Visualizer ── */}
         <div style={{
-          flex: 1, minWidth: 260,
+          flex: '0 0 240px',
           background: 'var(--bg-surface)',
           borderRadius: 16,
           border: '1px solid var(--border-subtle)',
-          padding: '18px 20px',
+          padding: '16px 14px',
         }}>
           <div style={{
-            fontSize: 11, fontWeight: 600, color: 'var(--text-muted)',
+            fontSize: 10, fontWeight: 600, color: 'var(--text-muted)',
             textTransform: 'uppercase', letterSpacing: '0.1em',
-            marginBottom: 16, fontFamily: 'var(--font-sans)',
+            marginBottom: 14, fontFamily: 'var(--font-sans)',
           }}>
             Execution Pipeline
           </div>
 
-          {/* Idle placeholder */}
           {runPhase === 'idle' && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               style={{
-                fontSize: 13, color: 'var(--text-muted)',
+                fontSize: 12, color: 'var(--text-muted)',
                 fontFamily: 'var(--font-sans)', textAlign: 'center',
-                padding: '30px 0',
+                padding: '20px 0',
               }}
             >
-              Hit <strong style={{ color: 'var(--text-secondary)' }}>Run Query</strong> to watch the pipeline light up ↙
+              Hit <strong style={{ color: 'var(--text-secondary)' }}>Run Query</strong> to watch the pipeline light up
             </motion.p>
           )}
 
           <PipelineVisualizer
             activeStepId={activeStepId}
             completedStepIds={completedStepIds}
+            isComplete={isComplete}
+            selectedStepId={selectedStepId}
+            onStepClick={handleStepClick}
           />
         </div>
+
+        {/* ── COL 3: Step Dialogue Panel ── */}
+        <StepDialoguePanel
+          dialogue={activeDialogue}
+          isComplete={isComplete}
+        />
       </div>
 
       {/* ── Bottom: Execution Timeline ── */}
-      <div style={{ padding: '0 28px 52px', maxWidth: 1080, margin: '0 auto', width: '100%' }}>
+      <div style={{ padding: '0 24px 48px', maxWidth: 1200, margin: '0 auto', width: '100%' }}>
         <ExecutionTimeline
           steps={steps}
           activeIndex={isComplete ? steps.length : activeStepIndex}
