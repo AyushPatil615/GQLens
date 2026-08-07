@@ -18,34 +18,6 @@ graphql_learner/
 └── server/          # Node.js + Apollo Server + SQLite backend
 ```
 
-## Getting Started
-
-### Frontend
-```bash
-cd client
-npm install
-npm run dev
-# → http://localhost:5173
-```
-
-### Backend
-```bash
-cd server
-npm install
-npm run dev
-# → http://localhost:4000
-```
-
-## Build Phases
-
-| Phase | Status | Description |
-|---|---|---|
-| Phase 0 | ✅ Done | Foundation & Setup |
-| Phase 1 | 🔜 Next | Fake Demo (hardcoded event log + animations) |
-| Phase 2 | ⏳ Later | User Testing & Iteration |
-| Phase 3 | ⏳ Later | Real Apollo Server + SQLite + Instrumentation |
-| Phase 4 | ⏳ Later | Full UI Build |
-| Phase 5 | ⏳ Later | Polish & Ship |
 
 ## Tech Stack
 
