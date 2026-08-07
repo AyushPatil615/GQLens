@@ -1,127 +1,48 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* ─── GraphScope Design Tokens ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 :root {
-  /* Color Palette */
-  --bg-base:      #0d0f17;
-  --bg-surface:   #131620;
-  --bg-elevated:  #1a1e2e;
-  --bg-card:      #1f2437;
+  /* ── Backgrounds ───────────────────────────────── */
+  --bg-base:    #FFF8F0;
+  --bg-surface: #FFFFFF;
 
-  --border-subtle: rgba(255,255,255,0.06);
-  --border-base:   rgba(255,255,255,0.12);
-  --border-strong: rgba(255,255,255,0.2);
+  /* ── Neobrutalism ─────────────────────────────── */
+  --border:    3px solid #000;
+  --border-2:  2px solid #000;
+  --shadow-sm: 3px 3px 0 #000;
+  --shadow-md: 5px 5px 0 #000;
+  --shadow-lg: 8px 8px 0 #000;
 
-  /* GraphQL Pink/Purple brand */
-  --accent-primary:   #e535ab;
-  --accent-secondary: #bf5af2;
-  --accent-tertiary:  #7c5cfc;
+  /* ── Step flat colors ─────────────────────────── */
+  --c-parse:    #87CEEF;
+  --c-validate: #C4B5FD;
+  --c-resolve:  #FDA4AF;
+  --c-db:       #FDB97D;
+  --c-courses:  #FCA5A5;
+  --c-respond:  #86EFAC;
 
-  /* Semantic colors */
-  --color-parse:    #38bdf8;   /* sky blue */
-  --color-validate: #a78bfa;   /* violet */
-  --color-resolve:  #e535ab;   /* graphql pink */
-  --color-db:       #fb923c;   /* orange */
-  --color-respond:  #4ade80;   /* green */
+  /* ── Typography ───────────────────────────────── */
+  --text-black: #000000;
+  --text-mid:   #374151;
+  --text-grey:  #6B7280;
 
-  --text-primary:   #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted:     #475569;
-
-  --success: #4ade80;
-  --warning: #fbbf24;
-  --error:   #f87171;
-
-  /* Spacing scale */
-  --space-xs:  4px;
-  --space-sm:  8px;
-  --space-md:  16px;
-  --space-lg:  24px;
-  --space-xl:  40px;
-  --space-2xl: 64px;
-
-  /* Typography */
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-
-  /* Shadows */
-  --shadow-sm:  0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.5);
-  --shadow-md:  0 4px 16px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.4);
-  --shadow-lg:  0 10px 40px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.5);
-  --shadow-glow: 0 0 24px rgba(229,53,171,0.25);
-
-  /* Border radius */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-
-  /* Transitions */
-  --transition-fast:   150ms ease;
-  --transition-normal: 250ms ease;
-  --transition-slow:   400ms cubic-bezier(0.4, 0, 0.2, 1);
+  --font-sans: 'Nunito', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
-/* ─── Base Reset ─── */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html {
-  font-size: 16px;
-  scroll-behavior: smooth;
-}
-
-body {
+html, body, #root {
+  min-height: 100vh;
+  background: var(--bg-base);
+  color: var(--text-black);
   font-family: var(--font-sans);
-  background-color: var(--bg-base);
-  color: var(--text-primary);
-  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  min-height: 100vh;
 }
 
-#root {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
+button { font-family: var(--font-sans); }
+pre, code { font-family: var(--font-mono); }
 
-/* ─── Typography ─── */
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-sans);
-  color: var(--text-primary);
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-}
-
-h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 700; }
-h2 { font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 600; }
-h3 { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; }
-h4 { font-size: 1.125rem; font-weight: 500; }
-
-p { color: var(--text-secondary); line-height: 1.7; }
-
-code, pre {
-  font-family: var(--font-mono);
-  font-size: 0.875em;
-}
-
-/* ─── Scrollbar ─── */
+/* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-base); }
-::-webkit-scrollbar-thumb {
-  background: var(--border-base);
-  border-radius: 999px;
-}
-::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
-
-/* ─── Selection ─── */
-::selection {
-  background: rgba(229,53,171,0.3);
-  color: var(--text-primary);
-}
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #000; border-radius: 3px; }

@@ -6,11 +6,28 @@ import { ExecutionTimeline } from '../ExecutionTimeline/ExecutionTimeline';
 import { StepDialoguePanel } from './StepDialoguePanel';
 
 type RunPhase = 'idle' | 'running' | 'complete';
-
 const STEP_DELAY_MS = 950;
+const COMPLETE_CAPTION = 'All done! The query traveled through every resolver and came back as JSON — in under 50ms.';
 
-const COMPLETE_CAPTION =
-  'All done! The query traveled through every resolver and came back as JSON — in under 50ms.';
+const STEP_COLORS: Record<string, string> = {
+  'parse':           '#87CEEF',
+  'validate':        '#C4B5FD',
+  'resolve:Student': '#FDA4AF',
+  'db:query':        '#FDB97D',
+  'resolve:courses': '#FCA5A5',
+  'respond':         '#86EFAC',
+};
+
+const FLOATERS = [
+  { char: '⬡', color: '#87CEEF', top: '12%',  left:  '2.5%', size: 28 },
+  { char: '●', color: '#C4B5FD', top: '8%',   right: '3.5%', size: 18 },
+  { char: '✦', color: '#FDA4AF', top: '38%',  left:  '1.5%', size: 22 },
+  { char: '▲', color: '#FDB97D', top: '44%',  right: '2%',   size: 16 },
+  { char: '⬡', color: '#86EFAC', bottom: '22%', left: '2%',  size: 20 },
+  { char: '●', color: '#FCA5A5', bottom: '30%', right: '3%', size: 14 },
+  { char: '✦', color: '#87CEEF', bottom: '10%', right: '5%', size: 18 },
+  { char: '⬡', color: '#C4B5FD', bottom: '16%', left: '3.5%', size: 14 },
+];
 
 export function FakeDemo() {
   const [runPhase, setRunPhase]               = useState<RunPhase>('idle');
@@ -19,31 +36,26 @@ export function FakeDemo() {
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const steps   = FAKE_EVENT_LOG;
-  const totalMs = steps.reduce((sum, s) => sum + s.ms, 0);
-
+  const totalMs = steps.reduce((s, e) => s + e.ms, 0);
   const isRunning  = runPhase === 'running';
   const isComplete = runPhase === 'complete';
 
   const activeStep =
     !isComplete && activeStepIndex >= 0 && activeStepIndex < steps.length
-      ? steps[activeStepIndex]
-      : null;
+      ? steps[activeStepIndex] : null;
 
   const caption = isComplete ? COMPLETE_CAPTION : (activeStep?.caption ?? '');
 
-  const completedStepIds: string[] = isComplete
+  const completedStepIds = isComplete
     ? steps.map(s => s.step)
-    : Array.from({ length: Math.max(0, activeStepIndex) }, (_, i) => steps[i].step);
+    : steps.slice(0, Math.max(0, activeStepIndex)).map(s => s.step);
 
   const activeStepId = isComplete ? null : (activeStep?.step ?? null);
 
-  // Find the dialogue data for the active step (during run) or selected step (after run)
-  const activeDialogue =
-    isComplete
-      ? (selectedStepId ? STEP_DIALOGUES.find(d => d.step === selectedStepId) ?? null : null)
-      : (!isComplete && activeStep ? STEP_DIALOGUES.find(d => d.step === activeStep.step) ?? null : null);
+  const activeDialogue = isComplete
+    ? (selectedStepId ? STEP_DIALOGUES.find(d => d.step === selectedStepId) ?? null : null)
+    : (activeStep ? STEP_DIALOGUES.find(d => d.step === activeStep.step) ?? null : null);
 
-  // ─── Animation control ────────────────────────────────────────────
   function clearAllTimeouts() {
     timeoutsRef.current.forEach(clearTimeout);
     timeoutsRef.current = [];
@@ -54,19 +66,15 @@ export function FakeDemo() {
     clearAllTimeouts();
     setRunPhase('running');
     setActiveStepIndex(0);
-
-    steps.forEach((_, index) => {
-      const t = setTimeout(() => {
-        setActiveStepIndex(index);
-      }, index * STEP_DELAY_MS);
+    steps.forEach((_, i) => {
+      const t = setTimeout(() => setActiveStepIndex(i), i * STEP_DELAY_MS);
       timeoutsRef.current.push(t);
     });
-
-    const doneTimeout = setTimeout(() => {
+    const done = setTimeout(() => {
       setRunPhase('complete');
       setActiveStepIndex(steps.length);
     }, steps.length * STEP_DELAY_MS);
-    timeoutsRef.current.push(doneTimeout);
+    timeoutsRef.current.push(done);
   }
 
   function handleStepClick(stepId: string) {
@@ -80,172 +88,203 @@ export function FakeDemo() {
     setSelectedStepId(null);
   }
 
-  // ─── Render ───────────────────────────────────────────────────────
+  const btnColor   = isRunning ? '#FDB97D' : isComplete ? '#86EFAC' : '#FF6B6B';
+  const btnText    = isRunning ? '#000' : isComplete ? '#000' : '#fff';
+  const btnShadow  = isRunning ? 'none' : '5px 5px 0 #000';
+  const btnContent = isRunning ? '⟳  Executing…' : isComplete ? '↺  Run Again' : '▶  Run Query';
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-base)' }}>
+    <div style={{
+      minHeight: '100vh',
+      background: 'var(--bg-base)',
+      backgroundImage: 'radial-gradient(circle, #d4c5b5 1.5px, transparent 1.5px)',
+      backgroundSize: '28px 28px',
+      display: 'flex', flexDirection: 'column',
+      position: 'relative', overflowX: 'hidden',
+    }}>
+
+      {/* ── Floating decorations ── */}
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
+        {FLOATERS.map((f, i) => (
+          <motion.span
+            key={i}
+            animate={{ y: [0, -8, 0] }}
+            transition={{ duration: 3 + i * 0.4, repeat: Infinity, ease: 'easeInOut', delay: i * 0.3 }}
+            style={{
+              position: 'absolute',
+              color: f.color,
+              fontSize: f.size,
+              fontWeight: 900,
+              opacity: 0.55,
+              ...(f as any),
+              char: undefined, color: undefined, size: undefined,
+              top: (f as any).top,
+              left: (f as any).left,
+              right: (f as any).right,
+              bottom: (f as any).bottom,
+            }}
+          >
+            {f.char}
+          </motion.span>
+        ))}
+      </div>
 
       {/* ── Header ── */}
       <header style={{
-        padding: '14px 28px',
-        borderBottom: '1px solid var(--border-subtle)',
-        display: 'flex', alignItems: 'center', gap: 12,
-        background: 'var(--bg-surface)',
         position: 'sticky', top: 0, zIndex: 10,
+        background: '#fff',
+        borderBottom: 'var(--border)',
+        padding: '12px 28px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <div style={{
-          width: 34, height: 34, borderRadius: 10,
-          background: 'linear-gradient(135deg, #e535ab 0%, #7c5cfc 100%)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 16, boxShadow: '0 0 16px rgba(229,53,171,0.35)',
-        }}>⬡</div>
-        <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}>
-          GraphScope
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 22, fontWeight: 900, fontFamily: 'var(--font-sans)', letterSpacing: '-0.5px' }}>
+            ⬡ GraphScope
+          </span>
+        </div>
         <span style={{
-          marginLeft: 6, fontSize: 11, color: 'var(--text-muted)',
+          fontSize: 11, fontWeight: 700,
+          padding: '4px 12px', borderRadius: 999,
+          border: 'var(--border-2)',
+          background: 'var(--bg-base)',
           fontFamily: 'var(--font-mono)',
-          padding: '2px 8px', borderRadius: 999,
-          background: 'rgba(229,53,171,0.08)',
-          border: '1px solid rgba(229,53,171,0.2)',
         }}>
           Phase 1 — Fake Demo
         </span>
       </header>
 
-      {/* ── Hero intro ── */}
-      <div style={{ textAlign: 'center', padding: '36px 28px 20px' }}>
+      {/* ── Hero ── */}
+      <div style={{ textAlign: 'center', padding: '44px 24px 28px', position: 'relative', zIndex: 1 }}>
         <motion.h1
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.45 }}
           style={{
-            fontSize: 'clamp(1.6rem, 4vw, 2.4rem)',
-            fontWeight: 700, marginBottom: 12,
-            background: 'linear-gradient(135deg, #f1f5f9 30%, #94a3b8 100%)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            fontSize: 'clamp(2rem, 5vw, 3.2rem)',
+            fontWeight: 900,
+            color: '#000',
+            lineHeight: 1.1,
+            letterSpacing: '-1px',
+            fontFamily: 'var(--font-sans)',
+            marginBottom: 6,
           }}
         >
-          Watch your query execute
+          GraphQL, Explained Step by Step
         </motion.h1>
+
+        {/* Rainbow underline */}
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          style={{
+            height: 5, width: 320, margin: '6px auto 16px',
+            background: 'linear-gradient(to right, #87CEEF, #C4B5FD, #FDA4AF, #FDB97D, #FCA5A5, #86EFAC)',
+            borderRadius: 99,
+          }}
+        />
+
         <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          style={{ fontSize: 15, color: 'var(--text-secondary)', maxWidth: 480, margin: '0 auto', lineHeight: 1.7 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.25 }}
+          style={{
+            fontSize: 15.5, color: 'var(--text-mid)',
+            maxWidth: 480, margin: '0 auto', lineHeight: 1.65,
+            fontWeight: 600,
+          }}
         >
-          Click <strong style={{ color: 'var(--text-primary)' }}>Run Query</strong> to see every step explained —
-          what happens, what it takes, and why it matters.
+          Click <strong style={{ color: '#000' }}>Run Query</strong> to see every step explained — what happens, what it takes, and why it matters.
         </motion.p>
       </div>
 
-      {/* ── Three-column layout ── */}
+      {/* ── Three columns ── */}
       <div style={{
-        display: 'flex', gap: 16, padding: '0 24px 20px',
-        maxWidth: 1200, margin: '0 auto', width: '100%',
-        flexWrap: 'wrap',
-        alignItems: 'flex-start',
+        display: 'flex', gap: 18, padding: '0 24px 24px',
+        maxWidth: 1180, margin: '0 auto', width: '100%',
+        flexWrap: 'wrap', alignItems: 'flex-start',
+        position: 'relative', zIndex: 1,
       }}>
 
-        {/* ── COL 1: Query Panel ── */}
-        <div style={{ flex: '0 0 290px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* ── COL 1: Query panel ── */}
+        <div style={{ flex: '0 0 280px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-          {/* Query card */}
-          <motion.div
-            animate={{
-              borderColor: isRunning
-                ? 'rgba(229,53,171,0.45)'
-                : isComplete
-                ? 'rgba(74,222,128,0.35)'
-                : 'rgba(255,255,255,0.07)',
-              boxShadow: isRunning
-                ? '0 0 24px rgba(229,53,171,0.12)'
-                : isComplete
-                ? '0 0 20px rgba(74,222,128,0.08)'
-                : '0 0 0px transparent',
-            }}
-            transition={{ duration: 0.4 }}
-            style={{
-              background: 'var(--bg-surface)',
-              borderRadius: 16,
-              border: '1px solid rgba(255,255,255,0.07)',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Editor title bar */}
+          {/* Editor card */}
+          <div style={{
+            background: '#fff',
+            border: 'var(--border)',
+            boxShadow: 'var(--shadow-md)',
+            borderRadius: 12,
+            overflow: 'hidden',
+          }}>
+            {/* Title bar */}
             <div style={{
-              padding: '9px 14px',
-              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              padding: '9px 14px', borderBottom: 'var(--border-2)',
+              background: '#f9f5f0',
               display: 'flex', alignItems: 'center', gap: 8,
-              background: 'var(--bg-elevated)',
             }}>
               <div style={{ display: 'flex', gap: 5 }}>
-                <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#ff5f57' }} />
-                <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#febc2e' }} />
-                <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#28c840' }} />
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f57', border: '1.5px solid #000' }} />
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#febc2e', border: '1.5px solid #000' }} />
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#28c840', border: '1.5px solid #000' }} />
               </div>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', marginLeft: 4 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-mono)', color: '#000' }}>
                 query.graphql
               </span>
             </div>
+
+            {/* Code */}
             <pre style={{
               margin: 0, padding: '18px 20px',
               fontFamily: 'var(--font-mono)', fontSize: 13,
-              lineHeight: 1.8, color: '#64748b', overflow: 'auto',
-              background: 'transparent',
+              lineHeight: 1.85, background: '#fff',
+              color: '#374151', overflowX: 'auto',
             }}>
-              <span style={{ color: '#a78bfa' }}>query</span>{' {\n'}
-              {'  '}<span style={{ color: '#38bdf8' }}>student</span>
-              {'(id: '}<span style={{ color: '#4ade80' }}>"1"</span>{')'}{' {\n'}
-              {'    '}<span style={{ color: '#f1f5f9' }}>name</span>{'\n'}
-              {'    '}<span style={{ color: '#f1f5f9' }}>age</span>{'\n'}
-              {'    '}<span style={{ color: '#38bdf8' }}>courses</span>{' {\n'}
-              {'      '}<span style={{ color: '#f1f5f9' }}>title</span>{'\n'}
+              <span style={{ color: '#7c3aed', fontWeight: 700 }}>query</span>{' {\n'}
+              {'  '}<span style={{ color: '#0369a1' }}>student</span>
+              {'(id: '}<span style={{ color: '#15803d' }}>"1"</span>{')'}{' {\n'}
+              {'    '}<span style={{ color: '#000', fontWeight: 600 }}>name</span>{'\n'}
+              {'    '}<span style={{ color: '#000', fontWeight: 600 }}>age</span>{'\n'}
+              {'    '}<span style={{ color: '#0369a1' }}>courses</span>{' {\n'}
+              {'      '}<span style={{ color: '#000', fontWeight: 600 }}>title</span>{'\n'}
               {'    }\n'}
               {'  }\n'}
               {'}'}
             </pre>
-          </motion.div>
+          </div>
 
-          {/* Run / Reset button */}
+          {/* Run button */}
           <motion.button
-            whileHover={{ scale: isRunning ? 1 : 1.02 }}
-            whileTap={{ scale: isRunning ? 1 : 0.96 }}
+            whileHover={!isRunning ? { x: -3, y: -3, boxShadow: '8px 8px 0 #000' } : {}}
+            whileTap={!isRunning ? { x: 0, y: 0, boxShadow: '2px 2px 0 #000' } : {}}
             onClick={isComplete ? reset : runQuery}
             disabled={isRunning}
             style={{
-              width: '100%', padding: '13px 20px',
-              borderRadius: 12, border: 'none',
-              cursor: isRunning ? 'not-allowed' : 'pointer',
-              background: isRunning
-                ? 'rgba(229,53,171,0.08)'
-                : isComplete
-                ? 'linear-gradient(135deg, #22c55e, #4ade80)'
-                : 'linear-gradient(135deg, #e535ab, #7c5cfc)',
-              color: isRunning ? 'rgba(229,53,171,0.5)' : '#fff',
-              fontSize: 14, fontWeight: 600,
+              width: '100%', padding: '15px 24px',
+              background: btnColor,
+              border: 'var(--border)',
+              boxShadow: btnShadow,
+              borderRadius: 10,
+              color: btnText,
+              fontSize: 16, fontWeight: 900,
               fontFamily: 'var(--font-sans)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: isRunning
-                ? 'none'
-                : isComplete
-                ? '0 4px 20px rgba(74,222,128,0.35)'
-                : '0 4px 20px rgba(229,53,171,0.4)',
-              transition: 'background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease',
+              cursor: isRunning ? 'not-allowed' : 'pointer',
+              transition: 'background 0.2s ease',
             }}
           >
             {isRunning ? (
-              <>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 <motion.span
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                   style={{ display: 'inline-block' }}
                 >⟳</motion.span>
                 Executing…
-              </>
-            ) : isComplete ? '↺  Run Again' : '▶  Run Query'}
+              </span>
+            ) : btnContent}
           </motion.button>
 
-          {/* Step progress badges */}
+          {/* Step badge pills */}
           <AnimatePresence>
             {(isRunning || isComplete) && (
               <motion.div
@@ -254,26 +293,23 @@ export function FakeDemo() {
                 exit={{ opacity: 0, height: 0 }}
                 style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}
               >
-                {steps.map((step, index) => {
-                  const colors: Record<string, string> = {
-                    'parse': '#38bdf8', 'validate': '#a78bfa',
-                    'resolve:Student': '#e535ab', 'db:query': '#fb923c',
-                    'resolve:courses': '#e535ab', 'respond': '#4ade80',
-                  };
-                  const c = colors[step.step] || '#94a3b8';
-                  const done   = isComplete || index < activeStepIndex;
-                  const active = !isComplete && index === activeStepIndex;
+                {steps.map((step, i) => {
+                  const c    = STEP_COLORS[step.step] || '#e5e7eb';
+                  const done = isComplete || i < activeStepIndex;
+                  const act  = !isComplete && i === activeStepIndex;
                   return (
                     <motion.span
                       key={step.step}
-                      animate={{ opacity: done || active ? 1 : 0.2 }}
+                      animate={{ opacity: done || act ? 1 : 0.25 }}
                       style={{
-                        fontSize: 10, fontWeight: 500,
-                        padding: '3px 8px', borderRadius: 999,
-                        background: done ? `${c}18` : 'transparent',
-                        border: `1px solid ${active ? c : done ? c + '35' : 'rgba(255,255,255,0.07)'}`,
-                        color: done || active ? c : '#1e293b',
+                        fontSize: 10, fontWeight: 700,
+                        padding: '3px 9px', borderRadius: 999,
+                        background: done || act ? c : 'transparent',
+                        border: `2px solid ${done || act ? '#000' : '#d1d5db'}`,
+                        boxShadow: done || act ? '2px 2px 0 #000' : 'none',
                         fontFamily: 'var(--font-mono)',
+                        color: '#000',
+                        transition: 'all 0.2s ease',
                       }}
                     >
                       {step.step}
@@ -285,34 +321,30 @@ export function FakeDemo() {
           </AnimatePresence>
         </div>
 
-        {/* ── COL 2: Pipeline Visualizer ── */}
+        {/* ── COL 2: Pipeline ── */}
         <div style={{
           flex: '0 0 240px',
-          background: 'var(--bg-surface)',
-          borderRadius: 16,
-          border: '1px solid var(--border-subtle)',
+          background: '#fff',
+          border: 'var(--border)',
+          boxShadow: 'var(--shadow-md)',
+          borderRadius: 12,
           padding: '16px 14px',
         }}>
           <div style={{
-            fontSize: 10, fontWeight: 600, color: 'var(--text-muted)',
-            textTransform: 'uppercase', letterSpacing: '0.1em',
-            marginBottom: 14, fontFamily: 'var(--font-sans)',
+            fontSize: 11, fontWeight: 800, color: '#000',
+            textTransform: 'uppercase', letterSpacing: '0.08em',
+            marginBottom: 14,
           }}>
             Execution Pipeline
           </div>
 
           {runPhase === 'idle' && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              style={{
-                fontSize: 12, color: 'var(--text-muted)',
-                fontFamily: 'var(--font-sans)', textAlign: 'center',
-                padding: '20px 0',
-              }}
-            >
-              Hit <strong style={{ color: 'var(--text-secondary)' }}>Run Query</strong> to watch the pipeline light up
-            </motion.p>
+            <p style={{
+              fontSize: 12, color: 'var(--text-grey)',
+              textAlign: 'center', padding: '16px 0', fontWeight: 600,
+            }}>
+              Hit <strong style={{ color: '#000' }}>Run Query</strong><br />to watch the pipeline light up
+            </p>
           )}
 
           <PipelineVisualizer
@@ -324,15 +356,19 @@ export function FakeDemo() {
           />
         </div>
 
-        {/* ── COL 3: Step Dialogue Panel ── */}
+        {/* ── COL 3: Dialogue ── */}
         <StepDialoguePanel
           dialogue={activeDialogue}
           isComplete={isComplete}
         />
       </div>
 
-      {/* ── Bottom: Execution Timeline ── */}
-      <div style={{ padding: '0 24px 48px', maxWidth: 1200, margin: '0 auto', width: '100%' }}>
+      {/* ── Timeline ── */}
+      <div style={{
+        padding: '0 24px 52px',
+        maxWidth: 1180, margin: '0 auto', width: '100%',
+        position: 'relative', zIndex: 1,
+      }}>
         <ExecutionTimeline
           steps={steps}
           activeIndex={isComplete ? steps.length : activeStepIndex}

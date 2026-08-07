@@ -1,39 +1,23 @@
 import { motion } from 'framer-motion';
 
-interface PipelineNode {
-  id: string;
-  label: string;
-  sublabel: string;
-  color: string;
-  icon: string;
-}
-
-const NODES: PipelineNode[] = [
-  { id: 'parse',           label: 'Parser',          sublabel: 'Reads & tokenizes the query text',   color: '#38bdf8', icon: '◈' },
-  { id: 'validate',        label: 'Validator',        sublabel: 'Checks fields exist in the schema',  color: '#a78bfa', icon: '✦' },
-  { id: 'resolve-student', label: 'Student Resolver', sublabel: 'A function that finds student data', color: '#e535ab', icon: '⬡' },
-  { id: 'db',              label: 'Database',         sublabel: 'Reads a row from SQLite',            color: '#fb923c', icon: '◉' },
-  { id: 'resolve-courses', label: 'Courses Resolver', sublabel: 'A function that finds enrollments',  color: '#e535ab', icon: '⬡' },
-  { id: 'respond',         label: 'JSON Response',    sublabel: 'Sends the data back to your app',   color: '#4ade80', icon: '✓' },
+const NODES = [
+  { id: 'parse',           step: 'parse',           label: 'Parser',          sublabel: 'Reads & tokenizes query text', color: '#87CEEF', icon: '◈' },
+  { id: 'validate',        step: 'validate',        label: 'Validator',        sublabel: 'Checks fields in the schema',  color: '#C4B5FD', icon: '✦' },
+  { id: 'resolve-student', step: 'resolve:Student', label: 'Student Resolver', sublabel: 'Finds student data',           color: '#FDA4AF', icon: '⬡' },
+  { id: 'db',              step: 'db:query',        label: 'Database',         sublabel: 'Reads row from SQLite',        color: '#FDB97D', icon: '◉' },
+  { id: 'resolve-courses', step: 'resolve:courses', label: 'Courses Resolver', sublabel: 'Finds enrollments',            color: '#FCA5A5', icon: '⬡' },
+  { id: 'respond',         step: 'respond',         label: 'JSON Response',    sublabel: 'Returns data to your app',     color: '#86EFAC', icon: '✓' },
 ];
 
 const STEP_TO_NODE: Record<string, string> = {
-  'parse':           'parse',
-  'validate':        'validate',
-  'resolve:Student': 'resolve-student',
-  'db:query':        'db',
-  'resolve:courses': 'resolve-courses',
-  'respond':         'respond',
+  'parse': 'parse', 'validate': 'validate',
+  'resolve:Student': 'resolve-student', 'db:query': 'db',
+  'resolve:courses': 'resolve-courses', 'respond': 'respond',
 };
-
-// Reverse map: node id → step id (for click callbacks)
 const NODE_TO_STEP: Record<string, string> = {
-  'parse':           'parse',
-  'validate':        'validate',
-  'resolve-student': 'resolve:Student',
-  'db':              'db:query',
-  'resolve-courses': 'resolve:courses',
-  'respond':         'respond',
+  'parse': 'parse', 'validate': 'validate',
+  'resolve-student': 'resolve:Student', 'db': 'db:query',
+  'resolve-courses': 'resolve:courses', 'respond': 'respond',
 };
 
 interface Props {
@@ -45,180 +29,132 @@ interface Props {
 }
 
 export function PipelineVisualizer({
-  activeStepId,
-  completedStepIds,
-  isComplete = false,
-  selectedStepId = null,
-  onStepClick,
+  activeStepId, completedStepIds,
+  isComplete = false, selectedStepId = null, onStepClick,
 }: Props) {
   const activeNodeId     = activeStepId ? (STEP_TO_NODE[activeStepId] ?? null) : null;
   const completedNodeIds = completedStepIds.map(id => STEP_TO_NODE[id]).filter(Boolean);
   const selectedNodeId   = selectedStepId ? (STEP_TO_NODE[selectedStepId] ?? null) : null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, padding: '8px 0' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
       {NODES.map((node, index) => {
         const isActive    = node.id === activeNodeId;
         const isCompleted = completedNodeIds.includes(node.id);
         const isSelected  = node.id === selectedNodeId;
         const isPending   = !isActive && !isCompleted;
         const isClickable = isComplete && isCompleted && !!onStepClick;
-        const nextNode    = NODES[index + 1];
 
         return (
-          <div
-            key={node.id}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}
-          >
-            {/* ─── Node card ─── */}
+          <div key={node.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+
+            {/* ── Node pill ── */}
             <motion.div
               onClick={isClickable ? () => onStepClick!(NODE_TO_STEP[node.id]) : undefined}
-              whileHover={isClickable ? { scale: 1.02, y: -1 } : {}}
-              whileTap={isClickable ? { scale: 0.98 } : {}}
+              whileHover={isClickable ? { x: -2, y: -2, boxShadow: '5px 5px 0 #000' } : {}}
+              whileTap={isClickable ? { x: 0, y: 0, boxShadow: '2px 2px 0 #000' } : {}}
               animate={{
-                opacity: isPending ? 0.25 : 1,
-                scale:   isActive ? 1.02 : 1,
-                boxShadow: isSelected
-                  ? `0 0 0 2px ${node.color}, 0 0 24px ${node.color}40`
-                  : isActive
-                  ? `0 0 28px ${node.color}50, 0 0 8px ${node.color}30`
-                  : isCompleted
-                  ? `0 0 6px ${node.color}15`
-                  : '0 0 0px transparent',
+                opacity: isPending ? 0.22 : 1,
+                scale:   isActive ? 1.03 : 1,
               }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
+              transition={{ duration: 0.25 }}
               style={{
                 width: '100%',
-                padding: '10px 12px',
-                borderRadius: 12,
-                background: isSelected
-                  ? `linear-gradient(135deg, ${node.color}22, ${node.color}0a)`
+                padding: '9px 12px',
+                borderRadius: 24,
+                background: isPending
+                  ? '#f3f4f6'
+                  : node.color,
+                border: isSelected
+                  ? '3px solid #000'
                   : isActive
-                  ? `linear-gradient(135deg, ${node.color}18, ${node.color}06)`
+                  ? '3px solid #000'
                   : isCompleted
-                  ? `${node.color}08`
-                  : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${
-                  isSelected
-                    ? node.color + '80'
-                    : isActive
-                    ? node.color + '55'
-                    : isCompleted
-                    ? node.color + '28'
-                    : 'rgba(255,255,255,0.05)'
-                }`,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
+                  ? '2px solid #000'
+                  : '2px solid #d1d5db',
+                boxShadow: isSelected
+                  ? '4px 4px 0 #000'
+                  : isActive
+                  ? '3px 3px 0 #000'
+                  : isCompleted
+                  ? '2px 2px 0 #000'
+                  : 'none',
+                display: 'flex', alignItems: 'center', gap: 8,
                 cursor: isClickable ? 'pointer' : 'default',
-                transition: 'background 0.3s ease, border-color 0.3s ease',
-                position: 'relative',
+                transition: 'background 0.25s ease, border-color 0.25s, box-shadow 0.15s',
               }}
             >
-              {/* Icon bubble */}
-              <motion.div
-                animate={{
-                  background: isActive || isCompleted ? `${node.color}25` : 'rgba(255,255,255,0.04)',
-                }}
-                transition={{ duration: 0.3 }}
-                style={{
-                  width: 30, height: 30, borderRadius: 8,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 13,
-                  color: isActive || isCompleted ? node.color : '#334155',
-                  flexShrink: 0,
-                  transition: 'color 0.3s ease',
-                }}
-              >
+              {/* Icon */}
+              <span style={{
+                fontSize: 13, fontWeight: 900,
+                color: isPending ? '#9ca3af' : '#000',
+                width: 20, textAlign: 'center', flexShrink: 0,
+              }}>
                 {isCompleted && !isActive ? '✓' : node.icon}
-              </motion.div>
+              </span>
 
               {/* Label */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
-                  fontSize: 12, fontWeight: 600,
-                  color: isActive ? node.color : isSelected ? node.color : isCompleted ? '#94a3b8' : '#334155',
+                  fontSize: 12, fontWeight: 800,
+                  color: isPending ? '#9ca3af' : '#000',
                   fontFamily: 'var(--font-sans)',
-                  transition: 'color 0.3s ease',
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 }}>
                   {node.label}
                 </div>
                 <div style={{
-                  fontSize: 10, marginTop: 1,
-                  color: isActive ? '#475569' : '#1e293b',
-                  fontFamily: 'var(--font-sans)',
+                  fontSize: 9.5, color: isPending ? '#c4c4c4' : '#374151',
+                  fontFamily: 'var(--font-sans)', fontWeight: 600,
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 }}>
                   {node.sublabel}
                 </div>
               </div>
 
-              {/* Active pulse */}
+              {/* Indicators */}
               {isActive && (
                 <motion.div
-                  animate={{ opacity: [1, 0.2, 1], scale: [1, 1.3, 1] }}
-                  transition={{ duration: 0.9, repeat: Infinity }}
-                  style={{
-                    width: 7, height: 7, borderRadius: '50%',
-                    background: node.color,
-                    boxShadow: `0 0 10px ${node.color}`,
-                    flexShrink: 0,
-                  }}
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{ duration: 0.8, repeat: Infinity }}
+                  style={{ width: 8, height: 8, borderRadius: '50%', background: '#000', flexShrink: 0 }}
                 />
               )}
-
-              {/* "Tap to explore" hint on completed nodes (when query is done) */}
               {isClickable && !isSelected && (
-                <div style={{
-                  fontSize: 9, color: node.color + '80',
-                  fontFamily: 'var(--font-mono)',
-                  flexShrink: 0,
-                  letterSpacing: '0.03em',
-                }}>
-                  ⓘ
-                </div>
+                <span style={{ fontSize: 10, color: '#374151', flexShrink: 0, fontWeight: 700 }}>ⓘ</span>
               )}
-
-              {/* "Selected" indicator */}
               {isSelected && (
-                <div style={{
-                  fontSize: 9, color: node.color,
-                  fontFamily: 'var(--font-mono)',
-                  flexShrink: 0,
-                  fontWeight: 700,
-                }}>
-                  ◀
-                </div>
+                <span style={{ fontSize: 10, color: '#000', flexShrink: 0, fontWeight: 900 }}>◀</span>
               )}
             </motion.div>
 
-            {/* ─── Connector line ─── */}
+            {/* ── Connector arrow ── */}
             {index < NODES.length - 1 && (
               <motion.div
-                animate={{
-                  background: isCompleted
-                    ? `linear-gradient(to bottom, ${node.color}55, ${nextNode.color}55)`
-                    : 'rgba(255,255,255,0.05)',
+                animate={{ opacity: isCompleted ? 1 : 0.3 }}
+                transition={{ duration: 0.4 }}
+                style={{
+                  fontSize: 14, fontWeight: 900,
+                  color: '#000', lineHeight: 1,
+                  padding: '3px 0',
+                  userSelect: 'none',
                 }}
-                transition={{ duration: 0.5 }}
-                style={{ width: 2, height: 16, borderRadius: 1 }}
-              />
+              >
+                ↓
+              </motion.div>
             )}
           </div>
         );
       })}
 
-      {/* Hint text after completion */}
       {isComplete && (
         <motion.p
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
           style={{
-            fontSize: 10, color: 'var(--text-muted)',
-            fontFamily: 'var(--font-sans)', textAlign: 'center',
-            marginTop: 12, lineHeight: 1.5,
+            fontSize: 10, fontWeight: 700, color: 'var(--text-grey)',
+            textAlign: 'center', marginTop: 10, lineHeight: 1.5,
           }}
         >
           ⓘ Click any step<br />to read its explanation

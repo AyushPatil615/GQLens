@@ -3,12 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 type EventStep = { step: string; ms: number; caption: string };
 
 const STEP_COLORS: Record<string, string> = {
-  'parse':           '#38bdf8',
-  'validate':        '#a78bfa',
-  'resolve:Student': '#e535ab',
-  'db:query':        '#fb923c',
-  'resolve:courses': '#e535ab',
-  'respond':         '#4ade80',
+  'parse':           '#87CEEF',
+  'validate':        '#C4B5FD',
+  'resolve:Student': '#FDA4AF',
+  'db:query':        '#FDB97D',
+  'resolve:courses': '#FCA5A5',
+  'respond':         '#86EFAC',
 };
 
 const STEP_LABELS: Record<string, string> = {
@@ -17,12 +17,18 @@ const STEP_LABELS: Record<string, string> = {
   'resolve:Student': 'Student Resolver',
   'db:query':        'Database Query',
   'resolve:courses': 'Courses Resolver',
-  'respond':         'Send Response',
+  'respond':         'Respond',
+};
+
+const STEP_ICONS: Record<string, string> = {
+  'parse': '◈', 'validate': '✦',
+  'resolve:Student': '⬡', 'db:query': '◉',
+  'resolve:courses': '⬡', 'respond': '✓',
 };
 
 interface Props {
   steps: EventStep[];
-  activeIndex: number;   // -1=idle, 0..n-1=running, n=complete
+  activeIndex: number;
   caption: string;
   isComplete: boolean;
   totalMs: number;
@@ -31,162 +37,150 @@ interface Props {
 export function ExecutionTimeline({ steps, activeIndex, caption, isComplete, totalMs }: Props) {
   const maxMs = Math.max(...steps.map(s => s.ms));
 
-  const isBarFilled = (index: number) => isComplete || index < activeIndex;
-  const isBarActive = (index: number) => !isComplete && index === activeIndex;
-
   return (
     <div style={{
-      background: 'var(--bg-surface)',
-      borderRadius: 16,
-      border: '1px solid var(--border-subtle)',
+      background: '#fff',
+      border: 'var(--border)',
+      boxShadow: 'var(--shadow-md)',
+      borderRadius: 12,
       overflow: 'hidden',
     }}>
-      {/* Header */}
-      <div style={{
-        padding: '16px 24px',
-        borderBottom: '1px solid var(--border-subtle)',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        background: 'var(--bg-elevated)',
-      }}>
-        <span style={{
-          fontSize: 11, fontWeight: 600, color: 'var(--text-muted)',
-          textTransform: 'uppercase', letterSpacing: '0.1em',
-          fontFamily: 'var(--font-sans)',
-        }}>
-          ⏱ Execution Timeline
-        </span>
 
+      {/* ── Header ── */}
+      <div style={{
+        padding: '14px 20px',
+        borderBottom: 'var(--border-2)',
+        background: '#f9f5f0',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: '#000' }}>
+            ⏱ Execution Timeline
+          </span>
+        </div>
         <AnimatePresence>
           {isComplete && (
-            <motion.span
+            <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               style={{
-                fontSize: 12, fontWeight: 600, color: '#4ade80',
-                background: 'rgba(74,222,128,0.12)',
+                fontSize: 11, fontWeight: 800,
                 padding: '4px 12px', borderRadius: 999,
-                border: '1px solid rgba(74,222,128,0.3)',
-                fontFamily: 'var(--font-mono)',
+                background: '#86EFAC',
+                border: 'var(--border-2)',
+                boxShadow: 'var(--shadow-sm)',
+                color: '#000',
               }}
             >
               ✓ {totalMs}ms total
-            </motion.span>
-          )}
-        </AnimatePresence>
-      </div>
-
-      <div style={{ padding: '24px' }}>
-        {/* Bars */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {steps.map((step, index) => {
-            const color = STEP_COLORS[step.step] || '#94a3b8';
-            const label = STEP_LABELS[step.step] || step.step;
-            const filled = isBarFilled(index);
-            const active = isBarActive(index);
-            const barWidthPct = (step.ms / maxMs) * 75;
-
-            return (
-              <div key={step.step} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                {/* Step label */}
-                <div style={{
-                  width: 150,
-                  fontSize: 12,
-                  fontWeight: active ? 600 : 400,
-                  textAlign: 'right',
-                  flexShrink: 0,
-                  color: active ? color : filled ? '#64748b' : '#1e293b',
-                  fontFamily: 'var(--font-sans)',
-                  transition: 'color 0.3s ease',
-                }}>
-                  {label}
-                </div>
-
-                {/* Bar track */}
-                <div style={{
-                  flex: 1,
-                  height: 10,
-                  background: 'rgba(255,255,255,0.04)',
-                  borderRadius: 999,
-                  overflow: 'hidden',
-                  position: 'relative',
-                }}>
-                  {(filled || active) && (
-                    <motion.div
-                      key={`bar-${step.step}`}
-                      initial={{ width: '0%' }}
-                      animate={{ width: `${barWidthPct}%` }}
-                      transition={{ duration: 0.55, ease: 'easeOut', delay: active ? 0.05 : 0 }}
-                      style={{
-                        height: '100%',
-                        borderRadius: 999,
-                        background: active
-                          ? `linear-gradient(90deg, ${color}, ${color}bb)`
-                          : color + '80',
-                        boxShadow: active ? `0 0 10px ${color}90` : 'none',
-                      }}
-                    />
-                  )}
-
-                  {/* Active shimmer */}
-                  {active && (
-                    <motion.div
-                      animate={{ x: ['-100%', '200%'] }}
-                      transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-                      style={{
-                        position: 'absolute', top: 0, left: 0,
-                        width: '40%', height: '100%',
-                        background: `linear-gradient(90deg, transparent, ${color}60, transparent)`,
-                        borderRadius: 999,
-                      }}
-                    />
-                  )}
-                </div>
-
-                {/* ms label */}
-                <div style={{
-                  width: 40, fontSize: 11, textAlign: 'right', flexShrink: 0,
-                  color: filled || active ? '#475569' : '#1e293b',
-                  fontFamily: 'var(--font-mono)',
-                  transition: 'color 0.3s ease',
-                }}>
-                  {(filled || active) ? `${step.ms}ms` : ''}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Caption */}
-        <AnimatePresence mode="wait">
-          {caption && (
-            <motion.div
-              key={caption}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.35 }}
-              style={{
-                marginTop: 20,
-                padding: '14px 18px',
-                background: isComplete
-                  ? 'rgba(74,222,128,0.06)'
-                  : 'rgba(255,255,255,0.03)',
-                borderRadius: 12,
-                border: isComplete
-                  ? '1px solid rgba(74,222,128,0.2)'
-                  : '1px solid rgba(255,255,255,0.06)',
-                fontSize: 13.5,
-                color: isComplete ? '#86efac' : '#94a3b8',
-                lineHeight: 1.65,
-                fontFamily: 'var(--font-sans)',
-              }}
-            >
-              {isComplete ? '✅ ' : '💬 '}
-              {caption}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
+
+      {/* ── Bars ── */}
+      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {steps.map((step, index) => {
+          const color    = STEP_COLORS[step.step] || '#e5e7eb';
+          const label    = STEP_LABELS[step.step] || step.step;
+          const icon     = STEP_ICONS[step.step] || '●';
+          const shouldShow = isComplete || index < activeIndex;
+          const isActive   = !isComplete && index === activeIndex;
+          const barWidth   = `${Math.max(4, (step.ms / maxMs) * 100)}%`;
+
+          return (
+            <div key={step.step} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {/* Label */}
+              <div style={{
+                width: 145, display: 'flex', alignItems: 'center', gap: 6,
+                flexShrink: 0,
+              }}>
+                <span style={{
+                  fontSize: 11, fontWeight: 800,
+                  width: 18, textAlign: 'center', color: '#000',
+                }}>
+                  {icon}
+                </span>
+                <span style={{
+                  fontSize: 11.5, fontWeight: 700,
+                  color: shouldShow ? '#000' : '#c4c4c4',
+                  transition: 'color 0.3s ease',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {label}
+                </span>
+              </div>
+
+              {/* Bar track */}
+              <div style={{
+                flex: 1, height: 14,
+                background: '#f3f4f6',
+                border: '2px solid #000',
+                borderRadius: 999,
+                overflow: 'hidden',
+                boxShadow: '2px 2px 0 #000',
+              }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: shouldShow ? barWidth : 0 }}
+                  transition={{ duration: 0.5, ease: 'easeOut', delay: isActive ? 0 : 0 }}
+                  style={{
+                    height: '100%',
+                    background: color,
+                    borderRadius: 999,
+                    display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+                    overflow: 'hidden',
+                    position: 'relative',
+                  }}
+                >
+                  {/* Shimmer for active bar */}
+                  {isActive && (
+                    <motion.div
+                      animate={{ x: ['-100%', '100%'] }}
+                      transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+                      style={{
+                        position: 'absolute', inset: 0,
+                        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+                      }}
+                    />
+                  )}
+                </motion.div>
+              </div>
+
+              {/* ms value */}
+              <div style={{
+                width: 38, textAlign: 'right', flexShrink: 0,
+                fontSize: 11, fontWeight: 700,
+                color: shouldShow ? '#374151' : '#e5e7eb',
+                transition: 'color 0.3s ease',
+                fontFamily: 'var(--font-mono)',
+              }}>
+                {shouldShow ? `${step.ms}ms` : ''}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Caption ── */}
+      <AnimatePresence>
+        {caption && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            style={{
+              padding: '12px 20px',
+              borderTop: 'var(--border-2)',
+              background: '#f9f5f0',
+              fontSize: 12, fontWeight: 600,
+              color: '#374151', lineHeight: 1.6,
+            }}
+          >
+            {caption}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
