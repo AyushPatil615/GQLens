@@ -1,13 +1,12 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FAKE_EVENT_LOG, STEP_DIALOGUES } from '../../data/fakeData';
+import { STEP_DIALOGUES } from '../../data/fakeData';
+import { useGraphQLTrace } from '../../hooks/useGraphQLTrace';
 import { PipelineVisualizer } from '../PipelineVisualizer/PipelineVisualizer';
 import { ExecutionTimeline } from '../ExecutionTimeline/ExecutionTimeline';
 import { StepDialoguePanel } from './StepDialoguePanel';
 
-type RunPhase = 'idle' | 'running' | 'complete';
-const STEP_DELAY_MS = 950;
-const COMPLETE_CAPTION = 'All done! The query traveled through every resolver and came back as JSON — in under 50ms.';
+const COMPLETE_CAPTION = 'All done! The query traveled through every resolver and came back as JSON.';
 
 const STEP_COLORS: Record<string, string> = {
   'parse':           '#87CEEF',
@@ -30,25 +29,22 @@ const FLOATERS = [
 ];
 
 export function FakeDemo() {
-  const [runPhase, setRunPhase]               = useState<RunPhase>('idle');
-  const [activeStepIndex, setActiveStepIndex] = useState<number>(-1);
-  const [selectedStepId, setSelectedStepId]   = useState<string | null>(null);
-  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
 
-  const steps   = FAKE_EVENT_LOG;
+  // ── Real backend hook — replaces fake setTimeout animation ──────────
+  const { steps, isRunning, isComplete, runQuery, reset: resetTrace } = useGraphQLTrace();
+
   const totalMs = steps.reduce((s, e) => s + e.ms, 0);
-  const isRunning  = runPhase === 'running';
-  const isComplete = runPhase === 'complete';
 
-  const activeStep =
-    !isComplete && activeStepIndex >= 0 && activeStepIndex < steps.length
-      ? steps[activeStepIndex] : null;
+  // The last arrived step is the "active" one while running
+  const activeStep = !isComplete && steps.length > 0 ? steps[steps.length - 1] : null;
 
   const caption = isComplete ? COMPLETE_CAPTION : (activeStep?.caption ?? '');
 
+  // All steps that have completed = everything except the last one currently running
   const completedStepIds = isComplete
     ? steps.map(s => s.step)
-    : steps.slice(0, Math.max(0, activeStepIndex)).map(s => s.step);
+    : steps.slice(0, Math.max(0, steps.length - 1)).map(s => s.step);
 
   const activeStepId = isComplete ? null : (activeStep?.step ?? null);
 
@@ -56,35 +52,12 @@ export function FakeDemo() {
     ? (selectedStepId ? STEP_DIALOGUES.find(d => d.step === selectedStepId) ?? null : null)
     : (activeStep ? STEP_DIALOGUES.find(d => d.step === activeStep.step) ?? null : null);
 
-  function clearAllTimeouts() {
-    timeoutsRef.current.forEach(clearTimeout);
-    timeoutsRef.current = [];
-  }
-
-  function runQuery() {
-    if (isRunning) return;
-    clearAllTimeouts();
-    setRunPhase('running');
-    setActiveStepIndex(0);
-    steps.forEach((_, i) => {
-      const t = setTimeout(() => setActiveStepIndex(i), i * STEP_DELAY_MS);
-      timeoutsRef.current.push(t);
-    });
-    const done = setTimeout(() => {
-      setRunPhase('complete');
-      setActiveStepIndex(steps.length);
-    }, steps.length * STEP_DELAY_MS);
-    timeoutsRef.current.push(done);
-  }
-
   function handleStepClick(stepId: string) {
     if (isComplete) setSelectedStepId(prev => prev === stepId ? null : stepId);
   }
 
   function reset() {
-    clearAllTimeouts();
-    setRunPhase('idle');
-    setActiveStepIndex(-1);
+    resetTrace();
     setSelectedStepId(null);
   }
 
@@ -135,23 +108,15 @@ export function FakeDemo() {
         background: '#fff',
         borderBottom: 'var(--border)',
         padding: '12px 28px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        display: 'flex', alignItems: 'center',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 22, fontWeight: 900, fontFamily: 'var(--font-sans)', letterSpacing: '-0.5px' }}>
             ⬡ GraphScope
           </span>
         </div>
-        <span style={{
-          fontSize: 11, fontWeight: 700,
-          padding: '4px 12px', borderRadius: 999,
-          border: 'var(--border-2)',
-          background: 'var(--bg-base)',
-          fontFamily: 'var(--font-mono)',
-        }}>
-          Phase 1 — Fake Demo
-        </span>
       </header>
+
 
       {/* ── Hero ── */}
       <div style={{ textAlign: 'center', padding: '44px 24px 28px', position: 'relative', zIndex: 1 }}>
@@ -338,7 +303,7 @@ export function FakeDemo() {
             Execution Pipeline
           </div>
 
-          {runPhase === 'idle' && (
+          {!isRunning && !isComplete && (
             <p style={{
               fontSize: 12, color: 'var(--text-grey)',
               textAlign: 'center', padding: '16px 0', fontWeight: 600,
@@ -371,7 +336,7 @@ export function FakeDemo() {
       }}>
         <ExecutionTimeline
           steps={steps}
-          activeIndex={isComplete ? steps.length : activeStepIndex}
+          activeIndex={isComplete ? steps.length : steps.length}
           caption={caption}
           isComplete={isComplete}
           totalMs={totalMs}
