@@ -174,20 +174,6 @@ export function FakeDemo() {
         ))}
       </div>
 
-      {/* ── Header ── */}
-      <header style={{
-        position: 'sticky', top: 0, zIndex: 10,
-        background: '#fff',
-        borderBottom: 'var(--border)',
-        padding: '12px 28px',
-        display: 'flex', alignItems: 'center',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 22, fontWeight: 900, fontFamily: 'var(--font-sans)', letterSpacing: '-0.5px' }}>
-            ⬡ GraphScope
-          </span>
-        </div>
-      </header>
 
       {/* ── Hero ── */}
       <div style={{ textAlign: 'center', padding: '44px 24px 28px', position: 'relative', zIndex: 1 }}>
