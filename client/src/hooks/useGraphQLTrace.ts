@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────
 export interface EventStep {
@@ -7,25 +7,17 @@ export interface EventStep {
   caption: string;
 }
 
-const GRAPHQL_QUERY = `
-  query {
-    student(id: "1") {
-      name
-      age
-      courses {
-        title
-      }
-    }
-  }
-`.trim();
-
 type Phase = 'idle' | 'running' | 'complete';
 
 // ─── Hook ─────────────────────────────────────────────────────────────
-export function useGraphQLTrace() {
+export function useGraphQLTrace(query: string) {
   const [phase, setPhase]   = useState<Phase>('idle');
   const [steps, setSteps]   = useState<EventStep[]>([]);
   const esRef               = useRef<EventSource | null>(null);
+
+  // Always keep a fresh ref to the query so runQuery (memoized) sees latest value
+  const queryRef = useRef(query);
+  useEffect(() => { queryRef.current = query; }, [query]);
 
   const isRunning  = phase === 'running';
   const isComplete = phase === 'complete';
@@ -54,7 +46,6 @@ export function useGraphQLTrace() {
         const event = JSON.parse(e.data) as EventStep & { step: string };
 
         if (event.step === '__done__') {
-          // All events received — mark complete
           setPhase('complete');
           es.close();
           esRef.current = null;
@@ -62,7 +53,6 @@ export function useGraphQLTrace() {
         }
 
         setSteps(prev => {
-          // Deduplicate: if the same step already appeared, update it
           const exists = prev.findIndex(s => s.step === event.step);
           if (exists >= 0) {
             const next = [...prev];
@@ -81,10 +71,10 @@ export function useGraphQLTrace() {
       es.close();
     };
 
-    // Small delay to ensure SSE connection is established before query fires
+    // Small delay to ensure SSE is ready before query fires
     await new Promise(resolve => setTimeout(resolve, 80));
 
-    // 2. Send the actual GraphQL query
+    // 2. Send the actual GraphQL query (always uses latest query via ref)
     try {
       await fetch('/graphql', {
         method:  'POST',
@@ -92,7 +82,7 @@ export function useGraphQLTrace() {
           'Content-Type':  'application/json',
           'x-request-id':  requestId,
         },
-        body: JSON.stringify({ query: GRAPHQL_QUERY }),
+        body: JSON.stringify({ query: queryRef.current }),
       });
     } catch (err) {
       console.error('[GraphScope] GraphQL request failed:', err);

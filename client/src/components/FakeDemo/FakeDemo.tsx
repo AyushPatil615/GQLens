@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STEP_DIALOGUES } from '../../data/fakeData';
 import { useGraphQLTrace } from '../../hooks/useGraphQLTrace';
@@ -6,8 +6,19 @@ import { PipelineVisualizer } from '../PipelineVisualizer/PipelineVisualizer';
 import { ExecutionTimeline } from '../ExecutionTimeline/ExecutionTimeline';
 import { StepDialoguePanel } from './StepDialoguePanel';
 
-const COMPLETE_CAPTION = 'All done! The query traveled through every resolver and came back as JSON.';
+// ─── Field state ──────────────────────────────────────────────────────
+interface Fields { name: boolean; age: boolean; courses: boolean }
 
+function buildQuery(f: Fields): string {
+  const lines = [
+    '    name',
+    f.age     ? '    age'                               : null,
+    f.courses ? '    courses {\n      title\n    }' : null,
+  ].filter(Boolean).join('\n');
+  return `query {\n  student(id: "1") {\n${lines}\n  }\n}`;
+}
+
+// ─── Design tokens ────────────────────────────────────────────────────
 const STEP_COLORS: Record<string, string> = {
   'parse':           '#87CEEF',
   'validate':        '#C4B5FD',
@@ -18,30 +29,79 @@ const STEP_COLORS: Record<string, string> = {
 };
 
 const FLOATERS = [
-  { char: '⬡', color: '#87CEEF', top: '12%',  left:  '2.5%', size: 28 },
-  { char: '●', color: '#C4B5FD', top: '8%',   right: '3.5%', size: 18 },
-  { char: '✦', color: '#FDA4AF', top: '38%',  left:  '1.5%', size: 22 },
-  { char: '▲', color: '#FDB97D', top: '44%',  right: '2%',   size: 16 },
-  { char: '⬡', color: '#86EFAC', bottom: '22%', left: '2%',  size: 20 },
-  { char: '●', color: '#FCA5A5', bottom: '30%', right: '3%', size: 14 },
-  { char: '✦', color: '#87CEEF', bottom: '10%', right: '5%', size: 18 },
-  { char: '⬡', color: '#C4B5FD', bottom: '16%', left: '3.5%', size: 14 },
+  { char: '⬡', color: '#87CEEF', top: '12%',   left:   '2.5%',  size: 28 },
+  { char: '●', color: '#C4B5FD', top: '8%',    right:  '3.5%',  size: 18 },
+  { char: '✦', color: '#FDA4AF', top: '38%',   left:   '1.5%',  size: 22 },
+  { char: '▲', color: '#FDB97D', top: '44%',   right:  '2%',    size: 16 },
+  { char: '⬡', color: '#86EFAC', bottom: '22%', left:  '2%',    size: 20 },
+  { char: '●', color: '#FCA5A5', bottom: '30%', right: '3%',    size: 14 },
+  { char: '✦', color: '#87CEEF', bottom: '10%', right: '5%',    size: 18 },
+  { char: '⬡', color: '#C4B5FD', bottom: '16%', left: '3.5%',  size: 14 },
 ];
 
+const COMPLETE_CAPTION = 'All done! The query traveled through every resolver and came back as JSON.';
+
+// ─── Field toggle pill ─────────────────────────────────────────────────
+function FieldPill({
+  label, checked, locked, color, onToggle,
+}: {
+  label: string; checked: boolean; locked?: boolean; color: string; onToggle?: () => void;
+}) {
+  return (
+    <motion.button
+      onClick={locked ? undefined : onToggle}
+      whileHover={locked ? {} : { y: -1 }}
+      whileTap={locked ? {} : { scale: 0.96 }}
+      title={locked ? 'name is always required' : `Toggle ${label}`}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 5,
+        padding: '4px 10px',
+        borderRadius: 999,
+        border: '2px solid #000',
+        background: checked ? color : '#f3f4f6',
+        boxShadow: checked ? '2px 2px 0 #000' : 'none',
+        cursor: locked ? 'default' : 'pointer',
+        fontSize: 11.5, fontWeight: 700,
+        fontFamily: 'var(--font-mono)',
+        color: '#000',
+        opacity: locked ? 0.6 : 1,
+        transition: 'background 0.15s, box-shadow 0.15s',
+      }}
+    >
+      <span style={{
+        width: 12, height: 12, borderRadius: 2,
+        border: '2px solid #000',
+        background: checked ? '#000' : 'transparent',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        {checked && <span style={{ color: '#fff', fontSize: 8, fontWeight: 900, lineHeight: 1 }}>✓</span>}
+      </span>
+      {label}
+      {locked && <span style={{ fontSize: 9, opacity: 0.7 }}>🔒</span>}
+    </motion.button>
+  );
+}
+
+// ─── Main component ────────────────────────────────────────────────────
 export function FakeDemo() {
+  const [fields, setFields] = useState<Fields>({ name: true, age: true, courses: true });
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
 
-  // ── Real backend hook — replaces fake setTimeout animation ──────────
-  const { steps, isRunning, isComplete, runQuery, reset: resetTrace } = useGraphQLTrace();
+  const query = buildQuery(fields);
 
-  const totalMs = steps.reduce((s, e) => s + e.ms, 0);
+  // Track whether fields changed after the last run (to show "run with new fields" hint)
+  const queryAtLastRunRef = useRef<string | null>(null);
+  const fieldsChangedSinceRun =
+    queryAtLastRunRef.current !== null && queryAtLastRunRef.current !== query;
 
-  // The last arrived step is the "active" one while running
+  // ── Real backend hook ───────────────────────────────────────────────
+  const { steps, isRunning, isComplete, runQuery, reset: resetTrace } = useGraphQLTrace(query);
+
+  const totalMs    = steps.reduce((s, e) => s + e.ms, 0);
   const activeStep = !isComplete && steps.length > 0 ? steps[steps.length - 1] : null;
+  const caption    = isComplete ? COMPLETE_CAPTION : (activeStep?.caption ?? '');
 
-  const caption = isComplete ? COMPLETE_CAPTION : (activeStep?.caption ?? '');
-
-  // All steps that have completed = everything except the last one currently running
   const completedStepIds = isComplete
     ? steps.map(s => s.step)
     : steps.slice(0, Math.max(0, steps.length - 1)).map(s => s.step);
@@ -59,12 +119,27 @@ export function FakeDemo() {
   function reset() {
     resetTrace();
     setSelectedStepId(null);
+    queryAtLastRunRef.current = null;
   }
 
-  const btnColor   = isRunning ? '#FDB97D' : isComplete ? '#86EFAC' : '#FF6B6B';
-  const btnText    = isRunning ? '#000' : isComplete ? '#000' : '#fff';
-  const btnShadow  = isRunning ? 'none' : '5px 5px 0 #000';
-  const btnContent = isRunning ? '⟳  Executing…' : isComplete ? '↺  Run Again' : '▶  Run Query';
+  function handleRunQuery() {
+    queryAtLastRunRef.current = query;
+    runQuery();
+  }
+
+  // ── Button label ────────────────────────────────────────────────────
+  const btnColor = isRunning ? '#FDB97D' : isComplete ? '#86EFAC' : '#FF6B6B';
+  const btnText  = '#000';
+  const btnShadow = isRunning ? 'none' : '5px 5px 0 #000';
+  const btnLabel = isRunning
+    ? '⟳  Executing…'
+    : isComplete
+      ? (fieldsChangedSinceRun ? '▶  Run with new fields' : '↺  Run Again')
+      : '▶  Run Query';
+
+  function toggleField(key: keyof Fields) {
+    setFields(prev => ({ ...prev, [key]: !prev[key] }));
+  }
 
   return (
     <div style={{
@@ -88,9 +163,6 @@ export function FakeDemo() {
               color: f.color,
               fontSize: f.size,
               fontWeight: 900,
-              opacity: 0.55,
-              ...(f as any),
-              char: undefined, color: undefined, size: undefined,
               top: (f as any).top,
               left: (f as any).left,
               right: (f as any).right,
@@ -117,21 +189,18 @@ export function FakeDemo() {
         </div>
       </header>
 
-
       {/* ── Hero ── */}
       <div style={{ textAlign: 'center', padding: '44px 24px 28px', position: 'relative', zIndex: 1 }}>
         <motion.h1
-          initial={{ opacity: 0, y: 18 }}
+          initial={{ opacity: 0, y: -14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
           style={{
-            fontSize: 'clamp(2rem, 5vw, 3.2rem)',
-            fontWeight: 900,
-            color: '#000',
-            lineHeight: 1.1,
-            letterSpacing: '-1px',
+            fontSize: 'clamp(26px, 4.5vw, 48px)',
+            fontWeight: 900, color: '#000',
             fontFamily: 'var(--font-sans)',
-            marginBottom: 6,
+            letterSpacing: '-1px', lineHeight: 1.1,
+            marginBottom: 12,
           }}
         >
           GraphQL, Explained Step by Step
@@ -141,9 +210,9 @@ export function FakeDemo() {
         <motion.div
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
+          transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
           style={{
-            height: 5, width: 320, margin: '6px auto 16px',
+            width: 260, height: 4, margin: '0 auto 18px',
             background: 'linear-gradient(to right, #87CEEF, #C4B5FD, #FDA4AF, #FDB97D, #FCA5A5, #86EFAC)',
             borderRadius: 99,
           }}
@@ -171,8 +240,8 @@ export function FakeDemo() {
         position: 'relative', zIndex: 1,
       }}>
 
-        {/* ── COL 1: Query panel ── */}
-        <div style={{ flex: '0 0 280px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* ── COL 1: Query panel + Field picker ── */}
+        <div style={{ flex: '0 0 290px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
           {/* Editor card */}
           <div style={{
@@ -198,40 +267,127 @@ export function FakeDemo() {
               </span>
             </div>
 
-            {/* Code */}
-            <pre style={{
-              margin: 0, padding: '18px 20px',
-              fontFamily: 'var(--font-mono)', fontSize: 13,
-              lineHeight: 1.85, background: '#fff',
-              color: '#374151', overflowX: 'auto',
+            {/* Dynamic code display */}
+            <div style={{
+              margin: 0, padding: '16px 20px',
+              fontFamily: 'var(--font-mono)', fontSize: 12.5,
+              lineHeight: 1.9, background: '#fff',
+              color: '#374151',
             }}>
-              <span style={{ color: '#7c3aed', fontWeight: 700 }}>query</span>{' {\n'}
-              {'  '}<span style={{ color: '#0369a1' }}>student</span>
-              {'(id: '}<span style={{ color: '#15803d' }}>"1"</span>{')'}{' {\n'}
-              {'    '}<span style={{ color: '#000', fontWeight: 600 }}>name</span>{'\n'}
-              {'    '}<span style={{ color: '#000', fontWeight: 600 }}>age</span>{'\n'}
-              {'    '}<span style={{ color: '#0369a1' }}>courses</span>{' {\n'}
-              {'      '}<span style={{ color: '#000', fontWeight: 600 }}>title</span>{'\n'}
-              {'    }\n'}
-              {'  }\n'}
-              {'}'}
-            </pre>
+              <div><span style={{ color: '#7c3aed', fontWeight: 700 }}>query</span> {'{'}</div>
+              <div>{'  '}<span style={{ color: '#0369a1', fontWeight: 600 }}>student</span>{'(id: '}<span style={{ color: '#15803d' }}>"1"</span>{')'} {'{'}</div>
+              <div>{'    '}<span style={{ color: '#000', fontWeight: 600 }}>name</span></div>
+
+              <AnimatePresence initial={false}>
+                {fields.age && (
+                  <motion.div
+                    key="age"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div>{'    '}<span style={{ color: '#000', fontWeight: 600 }}>age</span></div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence initial={false}>
+                {fields.courses && (
+                  <motion.div
+                    key="courses"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div>{'    '}<span style={{ color: '#0369a1', fontWeight: 600 }}>courses</span> {'{'}</div>
+                    <div>{'      '}<span style={{ color: '#000', fontWeight: 600 }}>title</span></div>
+                    <div>{'    }'}</div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div>{'  }'}</div>
+              <div>{'}'}</div>
+            </div>
+
+            {/* ── Field picker ── */}
+            <div style={{
+              borderTop: 'var(--border-2)',
+              background: '#f9f5f0',
+              padding: '12px 14px',
+            }}>
+              <div style={{
+                fontSize: 10, fontWeight: 800, color: '#6B7280',
+                textTransform: 'uppercase', letterSpacing: '0.08em',
+                marginBottom: 8,
+              }}>
+                Fields to fetch
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <FieldPill
+                  label="name" checked={fields.name} locked color="#FDA4AF"
+                />
+                <FieldPill
+                  label="age" checked={fields.age} color="#C4B5FD"
+                  onToggle={() => toggleField('age')}
+                />
+                <FieldPill
+                  label="courses" checked={fields.courses} color="#FDB97D"
+                  onToggle={() => toggleField('courses')}
+                />
+              </div>
+
+              {/* Insight tip — shows when courses is off */}
+              <AnimatePresence>
+                {!fields.courses && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.22 }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div style={{
+                      marginTop: 10, padding: '8px 10px',
+                      background: '#FEF9C3',
+                      border: '2px solid #000',
+                      boxShadow: '2px 2px 0 #000',
+                      borderRadius: 8,
+                      fontSize: 11, fontWeight: 600, color: '#000',
+                      lineHeight: 1.5,
+                    }}>
+                      💡 <strong>Watch the pipeline!</strong> Courses Resolver will be <em>skipped</em> — GraphQL only runs what you ask for.
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           {/* Run button */}
           <motion.button
             whileHover={!isRunning ? { x: -3, y: -3, boxShadow: '8px 8px 0 #000' } : {}}
             whileTap={!isRunning ? { x: 0, y: 0, boxShadow: '2px 2px 0 #000' } : {}}
-            onClick={isComplete ? reset : runQuery}
+            onClick={isComplete ? (fieldsChangedSinceRun ? handleRunQuery : reset) : handleRunQuery}
             disabled={isRunning}
             style={{
               width: '100%', padding: '15px 24px',
-              background: btnColor,
+              background: isRunning
+                ? '#FDB97D'
+                : (isComplete && fieldsChangedSinceRun)
+                  ? '#87CEEF'
+                  : isComplete
+                    ? '#86EFAC'
+                    : '#FF6B6B',
               border: 'var(--border)',
               boxShadow: btnShadow,
               borderRadius: 10,
               color: btnText,
-              fontSize: 16, fontWeight: 900,
+              fontSize: 15, fontWeight: 900,
               fontFamily: 'var(--font-sans)',
               cursor: isRunning ? 'not-allowed' : 'pointer',
               transition: 'background 0.2s ease',
@@ -246,10 +402,10 @@ export function FakeDemo() {
                 >⟳</motion.span>
                 Executing…
               </span>
-            ) : btnContent}
+            ) : btnLabel}
           </motion.button>
 
-          {/* Step badge pills */}
+          {/* Step badge pills — shows which steps fired */}
           <AnimatePresence>
             {(isRunning || isComplete) && (
               <motion.div
@@ -258,23 +414,21 @@ export function FakeDemo() {
                 exit={{ opacity: 0, height: 0 }}
                 style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}
               >
-                {steps.map((step, i) => {
-                  const c    = STEP_COLORS[step.step] || '#e5e7eb';
-                  const done = isComplete || i < activeStepIndex;
-                  const act  = !isComplete && i === activeStepIndex;
+                {steps.map((step) => {
+                  const c = STEP_COLORS[step.step] || '#e5e7eb';
                   return (
                     <motion.span
                       key={step.step}
-                      animate={{ opacity: done || act ? 1 : 0.25 }}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
                       style={{
                         fontSize: 10, fontWeight: 700,
                         padding: '3px 9px', borderRadius: 999,
-                        background: done || act ? c : 'transparent',
-                        border: `2px solid ${done || act ? '#000' : '#d1d5db'}`,
-                        boxShadow: done || act ? '2px 2px 0 #000' : 'none',
+                        background: c,
+                        border: '2px solid #000',
+                        boxShadow: '2px 2px 0 #000',
                         fontFamily: 'var(--font-mono)',
                         color: '#000',
-                        transition: 'all 0.2s ease',
                       }}
                     >
                       {step.step}
@@ -336,7 +490,7 @@ export function FakeDemo() {
       }}>
         <ExecutionTimeline
           steps={steps}
-          activeIndex={isComplete ? steps.length : steps.length}
+          activeIndex={steps.length}
           caption={caption}
           isComplete={isComplete}
           totalMs={totalMs}
