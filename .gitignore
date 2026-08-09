@@ -35,3 +35,6 @@ pnpm-debug.log*
 
 # ── Agent config (local only) ────────────────────────────────
 .agents/
+
+# ── Private planning docs ────────────────────────────────────
+GraphScope_v1_Build_Plan.md
