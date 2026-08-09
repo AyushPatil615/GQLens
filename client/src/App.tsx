@@ -18,12 +18,11 @@ export default function App() {
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column' }}>
 
       {/* ── Shared sticky header ── */}
-      <header style={{
+      <header className="gs-header" style={{
         position: 'sticky', top: 0, zIndex: 50,
         background: '#fff',
         borderBottom: 'var(--border)',
         padding: '0 28px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         height: 54,
       }}>
         {/* Logo */}
@@ -32,7 +31,7 @@ export default function App() {
         </span>
 
         {/* Tab switcher */}
-        <nav style={{ display: 'flex', gap: 4, background: 'var(--bg-base)', border: 'var(--border-2)', borderRadius: 10, padding: 3 }}>
+        <nav className="gs-tab-nav" style={{ background: 'var(--bg-base)', border: 'var(--border-2)', borderRadius: 10, padding: 3 }}>
           {TAB_CONFIG.map(t => (
             <motion.button
               key={t.id}
@@ -52,7 +51,7 @@ export default function App() {
                 whiteSpace: 'nowrap',
               }}
             >
-              {t.emoji} {t.label}
+              {t.emoji} <span className="gs-tab-label">{t.label}</span>
             </motion.button>
           ))}
         </nav>

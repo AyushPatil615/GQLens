@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { STEP_DIALOGUES } from '../../data/fakeData';
+import { STEP_DIALOGUES } from '../../data/stepDialogues';
 import { useGraphQLTrace } from '../../hooks/useGraphQLTrace';
 import { PipelineVisualizer } from '../PipelineVisualizer/PipelineVisualizer';
 import { ExecutionTimeline } from '../ExecutionTimeline/ExecutionTimeline';
@@ -96,7 +96,7 @@ export function FakeDemo() {
     queryAtLastRunRef.current !== null && queryAtLastRunRef.current !== query;
 
   // ── Real backend hook ───────────────────────────────────────────────
-  const { steps, isRunning, isComplete, runQuery, reset: resetTrace } = useGraphQLTrace(query);
+  const { steps, isRunning, isComplete, isError, errorMsg, responseData, runQuery, reset: resetTrace } = useGraphQLTrace(query);
 
   const totalMs    = steps.reduce((s, e) => s + e.ms, 0);
   const activeStep = !isComplete && steps.length > 0 ? steps[steps.length - 1] : null;
@@ -128,14 +128,15 @@ export function FakeDemo() {
   }
 
   // ── Button label ────────────────────────────────────────────────────
-  const btnColor = isRunning ? '#FDB97D' : isComplete ? '#86EFAC' : '#FF6B6B';
-  const btnText  = '#000';
   const btnShadow = isRunning ? 'none' : '5px 5px 0 #000';
   const btnLabel = isRunning
     ? '⟳  Executing…'
-    : isComplete
-      ? (fieldsChangedSinceRun ? '▶  Run with new fields' : '↺  Run Again')
-      : '▶  Run Query';
+    : isError
+      ? '↺  Try Again'
+      : isComplete
+        ? (fieldsChangedSinceRun ? '▶  Run with new fields' : '↺  Run Again')
+        : '▶  Run Query';
+  const btnBg = isRunning ? '#FDB97D' : isError ? '#FCA5A5' : isComplete ? '#86EFAC' : '#FF6B6B';
 
   function toggleField(key: keyof Fields) {
     setFields(prev => ({ ...prev, [key]: !prev[key] }));
@@ -152,7 +153,7 @@ export function FakeDemo() {
     }}>
 
       {/* ── Floating decorations ── */}
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
+      <div className="gs-floaters" style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden' }}>
         {FLOATERS.map((f, i) => (
           <motion.span
             key={i}
@@ -219,15 +220,14 @@ export function FakeDemo() {
       </div>
 
       {/* ── Three columns ── */}
-      <div style={{
-        display: 'flex', gap: 18, padding: '0 24px 24px',
+      <div className="gs-three-col" style={{
+        padding: '0 24px 24px',
         maxWidth: 1180, margin: '0 auto', width: '100%',
-        flexWrap: 'wrap', alignItems: 'flex-start',
         position: 'relative', zIndex: 1,
       }}>
 
         {/* ── COL 1: Query panel + Field picker ── */}
-        <div style={{ flex: '0 0 290px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ flex: '1 1 280px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
 
           {/* Editor card */}
           <div style={{
@@ -355,24 +355,39 @@ export function FakeDemo() {
           </div>
 
           {/* Run button */}
+          {/* Error banner */}
+          <AnimatePresence>
+            {isError && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                style={{
+                  padding: '12px 14px',
+                  background: '#FEE2E2',
+                  border: '2px solid #000',
+                  boxShadow: '3px 3px 0 #000',
+                  borderRadius: 10,
+                  fontSize: 12, fontWeight: 600, color: '#000',
+                  lineHeight: 1.6,
+                }}
+              >
+                <div style={{ fontWeight: 800, marginBottom: 4 }}>⚠️ Server unreachable</div>
+                {errorMsg}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <motion.button
             whileHover={!isRunning ? { x: -3, y: -3, boxShadow: '8px 8px 0 #000' } : {}}
             whileTap={!isRunning ? { x: 0, y: 0, boxShadow: '2px 2px 0 #000' } : {}}
-            onClick={isComplete ? (fieldsChangedSinceRun ? handleRunQuery : reset) : handleRunQuery}
+            onClick={(isComplete || isError) ? (fieldsChangedSinceRun ? handleRunQuery : reset) : handleRunQuery}
             disabled={isRunning}
             style={{
               width: '100%', padding: '15px 24px',
-              background: isRunning
-                ? '#FDB97D'
-                : (isComplete && fieldsChangedSinceRun)
-                  ? '#87CEEF'
-                  : isComplete
-                    ? '#86EFAC'
-                    : '#FF6B6B',
+              background: btnBg,
               border: 'var(--border)',
               boxShadow: btnShadow,
               borderRadius: 10,
-              color: btnText,
+              color: '#000',
               fontSize: 15, fontWeight: 900,
               fontFamily: 'var(--font-sans)',
               cursor: isRunning ? 'not-allowed' : 'pointer',
@@ -428,7 +443,7 @@ export function FakeDemo() {
 
         {/* ── COL 2: Pipeline ── */}
         <div style={{
-          flex: '0 0 240px',
+          flex: '1 1 220px', minWidth: 0,
           background: '#fff',
           border: 'var(--border)',
           boxShadow: 'var(--shadow-md)',
@@ -465,6 +480,7 @@ export function FakeDemo() {
         <StepDialoguePanel
           dialogue={activeDialogue}
           isComplete={isComplete}
+          responseData={responseData}
         />
       </div>
 

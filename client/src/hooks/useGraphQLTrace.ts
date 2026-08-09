@@ -7,13 +7,18 @@ export interface EventStep {
   caption: string;
 }
 
-type Phase = 'idle' | 'running' | 'complete';
+type Phase = 'idle' | 'running' | 'complete' | 'error';
+
+const TIMEOUT_MS = 10_000; // 10 s — if server never responds, show error
 
 // ─── Hook ─────────────────────────────────────────────────────────────
 export function useGraphQLTrace(query: string) {
-  const [phase, setPhase]   = useState<Phase>('idle');
-  const [steps, setSteps]   = useState<EventStep[]>([]);
-  const esRef               = useRef<EventSource | null>(null);
+  const [phase, setPhase]             = useState<Phase>('idle');
+  const [steps, setSteps]             = useState<EventStep[]>([]);
+  const [responseData, setResponseData] = useState<Record<string, unknown> | null>(null);
+  const [errorMsg, setErrorMsg]       = useState<string | null>(null);
+  const esRef                         = useRef<EventSource | null>(null);
+  const timeoutRef                    = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Always keep a fresh ref to the query so runQuery (memoized) sees latest value
   const queryRef = useRef(query);
@@ -21,12 +26,17 @@ export function useGraphQLTrace(query: string) {
 
   const isRunning  = phase === 'running';
   const isComplete = phase === 'complete';
+  const isError    = phase === 'error';
 
   const reset = useCallback(() => {
     esRef.current?.close();
     esRef.current = null;
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = null;
     setPhase('idle');
     setSteps([]);
+    setResponseData(null);
+    setErrorMsg(null);
   }, []);
 
   const runQuery = useCallback(async () => {
@@ -36,6 +46,16 @@ export function useGraphQLTrace(query: string) {
     const requestId = crypto.randomUUID();
     setPhase('running');
     setSteps([]);
+    setResponseData(null);
+    setErrorMsg(null);
+
+    // ── Timeout watchdog ─────────────────────────────────────────────
+    timeoutRef.current = setTimeout(() => {
+      esRef.current?.close();
+      esRef.current = null;
+      setPhase('error');
+      setErrorMsg('Server did not respond in time. Make sure the backend is running on port 4000.');
+    }, TIMEOUT_MS);
 
     // 1. Open SSE connection BEFORE sending the query
     const es = new EventSource(`/events?requestId=${requestId}`);
@@ -46,6 +66,7 @@ export function useGraphQLTrace(query: string) {
         const event = JSON.parse(e.data) as EventStep & { step: string };
 
         if (event.step === '__done__') {
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
           setPhase('complete');
           es.close();
           esRef.current = null;
@@ -67,16 +88,19 @@ export function useGraphQLTrace(query: string) {
     };
 
     es.onerror = () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
       console.warn('[GraphScope] SSE connection error');
+      setPhase('error');
+      setErrorMsg('Could not connect to the server. Is it running on port 4000?');
       es.close();
     };
 
     // Small delay to ensure SSE is ready before query fires
     await new Promise(resolve => setTimeout(resolve, 80));
 
-    // 2. Send the actual GraphQL query (always uses latest query via ref)
+    // 2. Send the actual GraphQL query and capture the response
     try {
-      await fetch('/graphql', {
+      const res = await fetch('/graphql', {
         method:  'POST',
         headers: {
           'Content-Type':  'application/json',
@@ -84,12 +108,24 @@ export function useGraphQLTrace(query: string) {
         },
         body: JSON.stringify({ query: queryRef.current }),
       });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status} — ${res.statusText}`);
+      }
+
+      const json = await res.json();
+      // Store the actual data payload (not errors wrapper)
+      setResponseData(json.data ?? json);
+
     } catch (err) {
-      console.error('[GraphScope] GraphQL request failed:', err);
-      setPhase('idle');
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      console.error('[GraphScope] GraphQL request failed:', msg);
+      setPhase('error');
+      setErrorMsg(`Failed to reach the server: ${msg}`);
       es.close();
     }
   }, [isRunning, reset]);
 
-  return { steps, isRunning, isComplete, runQuery, reset };
+  return { steps, isRunning, isComplete, isError, errorMsg, responseData, runQuery, reset };
 }

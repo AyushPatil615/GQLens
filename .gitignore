@@ -8,6 +8,8 @@ build/
 # ── SQLite database files ────────────────────────────────────
 *.db
 *.sqlite
+*.sqlite-shm
+*.sqlite-wal
 
 # ── Environment variables ────────────────────────────────────
 .env

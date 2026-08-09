@@ -291,9 +291,7 @@ export function RestComparison({ onTryDemo }: { onTryDemo: () => void }) {
 
             {/* ── REST section ── */}
             <div style={{ marginBottom: 24 }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12,
-              }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <span style={{
                   fontSize: 10, fontWeight: 800,
                   padding: '3px 10px', borderRadius: 99,
@@ -305,6 +303,14 @@ export function RestComparison({ onTryDemo }: { onTryDemo: () => void }) {
                 </span>
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-grey)' }}>
                   sequential requests — each must wait for the previous
+                </span>
+                <span style={{
+                  marginLeft: 'auto', fontSize: 10, fontWeight: 700,
+                  padding: '2px 8px', borderRadius: 99,
+                  background: '#FEF9C3', border: '1.5px solid #d97706',
+                  color: '#92400e', whiteSpace: 'nowrap', flexShrink: 0,
+                }}>
+                  ★ simulated timings
                 </span>
               </div>
 

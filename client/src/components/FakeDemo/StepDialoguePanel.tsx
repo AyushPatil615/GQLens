@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { StepDialogue } from '../../data/fakeData';
+import type { StepDialogue } from '../../data/stepDialogues';
 
 // Neobrutalism flat colors override (replaces the old glow colors)
 const NEO_COLORS: Record<string, string> = {
@@ -16,13 +16,14 @@ const RAINBOW_STRIPE =
   'linear-gradient(to right, #87CEEF 16.67%, #C4B5FD 16.67% 33.33%, #FDA4AF 33.33% 50%, #FDB97D 50% 66.67%, #FCA5A5 66.67% 83.33%, #86EFAC 83.33%)';
 
 interface Props {
-  dialogue: StepDialogue | null;
-  isComplete: boolean;
+  dialogue:     StepDialogue | null;
+  isComplete:   boolean;
+  responseData?: Record<string, unknown> | null;
 }
 
 type SectionKey = 'howItWorks' | 'whatItTakes' | 'inContext' | 'code';
 
-export function StepDialoguePanel({ dialogue, isComplete }: Props) {
+export function StepDialoguePanel({ dialogue, isComplete, responseData }: Props) {
   const [expanded, setExpanded] = useState<Record<SectionKey, boolean>>({
     howItWorks: true, whatItTakes: true, inContext: true, code: false,
   });
@@ -81,30 +82,53 @@ export function StepDialoguePanel({ dialogue, isComplete }: Props) {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{ ...cardBase, alignItems: 'center', justifyContent: 'center', padding: 28, textAlign: 'center', gap: 16 }}
+        style={{ ...cardBase, overflow: 'auto' }}
       >
         {/* Rainbow stripe */}
-        <div style={{ alignSelf: 'stretch', height: 8, background: RAINBOW_STRIPE }} />
+        <div style={{ height: 8, background: RAINBOW_STRIPE, flexShrink: 0 }} />
 
-        <motion.div
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-          style={{ fontSize: 40 }}
-        >
-          👆
-        </motion.div>
-
-        <div>
-          <div style={{ fontSize: 18, fontWeight: 900, color: '#000', marginBottom: 6 }}>
-            Query Complete!
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--text-grey)', lineHeight: 1.75, fontWeight: 600 }}>
-            Click any step in the pipeline<br />to read a full explanation<br />at your own pace.
+        {/* Header */}
+        <div style={{ padding: '14px 18px 10px', borderBottom: 'var(--border-2)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <motion.div
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ fontSize: 24, flexShrink: 0 }}
+          >
+            👆
+          </motion.div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 900, color: '#000' }}>Query Complete!</div>
+            <div style={{ fontSize: 11.5, color: 'var(--text-grey)', fontWeight: 600 }}>Click any step in the pipeline to read its explanation.</div>
           </div>
         </div>
 
-        {/* Step list preview */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%', maxWidth: 220 }}>
+        {/* Actual JSON response */}
+        {responseData && (
+          <div style={{ padding: '14px 16px', borderBottom: 'var(--border-2)' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#000', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+              📦 Response from server
+            </div>
+            <pre style={{
+              margin: 0,
+              padding: '12px 14px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11.5, lineHeight: 1.75,
+              color: '#374151',
+              background: '#f0fff4',
+              border: '2px solid #000',
+              boxShadow: '3px 3px 0 #000',
+              borderRadius: 8,
+              overflowX: 'auto',
+              whiteSpace: 'pre',
+            }}>
+              {JSON.stringify(responseData, null, 2)}
+            </pre>
+          </div>
+        )}
+
+        {/* Step list */}
+        <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#000', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>Steps that ran</div>
           {[
             { color: '#87CEEF', label: 'Parser' },
             { color: '#C4B5FD', label: 'Validator' },
@@ -117,7 +141,7 @@ export function StepDialoguePanel({ dialogue, isComplete }: Props) {
               key={s.label}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.07 }}
+              transition={{ delay: i * 0.06 }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
                 padding: '6px 10px',

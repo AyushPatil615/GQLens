@@ -59,6 +59,11 @@ async function start() {
     typeDefs,
     resolvers,
     plugins: [createTracingPlugin()],
+    // Disable the document store so Apollo re-parses and re-validates
+    // every query. Without this, the parsingDidStart and validationDidStart
+    // plugin hooks are skipped on repeated runs, making Parser and Validator
+    // appear grayed out in the learning pipeline.
+    documentStore: null,
   });
 
   await server.start();
