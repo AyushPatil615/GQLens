@@ -12,7 +12,7 @@ type Phase = 'idle' | 'running' | 'complete' | 'error';
 const TIMEOUT_MS = 10_000; // 10 s — if server never responds, show error
 
 // ─── Hook ─────────────────────────────────────────────────────────────
-export function useGraphQLTrace(query: string) {
+export function useGraphQLTrace(query: string, domainId = 'education') {
   const [phase, setPhase]             = useState<Phase>('idle');
   const [steps, setSteps]             = useState<EventStep[]>([]);
   const [responseData, setResponseData] = useState<Record<string, unknown> | null>(null);
@@ -105,6 +105,7 @@ export function useGraphQLTrace(query: string) {
         headers: {
           'Content-Type':  'application/json',
           'x-request-id':  requestId,
+          'x-domain-id':   domainId,
         },
         body: JSON.stringify({ query: queryRef.current }),
       });

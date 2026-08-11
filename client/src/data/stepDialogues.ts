@@ -1,12 +1,13 @@
 // ─── Step Dialogues ───────────────────────────────────────────────────
-// Rich explanations shown in the right panel when a pipeline step is clicked.
-// These are educational content — not fake data — hence the rename from fakeData.ts.
+// This legacy export is kept for backwards compatibility.
+// FakeDemo now reads step dialogues from the domain config (domains.ts).
 
 export type StepDialogue = {
   step:           string;
   color:          string;
   icon:           string;
   label:          string;
+  sublabel:       string;   // short text shown under the label in PipelineVisualizer
   stepNumber:     number;
   totalSteps:     number;
   whatHappens:    string;
@@ -21,6 +22,7 @@ export const STEP_DIALOGUES: StepDialogue[] = [
     color: '#38bdf8',
     icon: '◈',
     label: 'Parser',
+    sublabel: 'Reads & tokenizes query text',
     stepNumber: 1,
     totalSteps: 6,
     whatHappens:
@@ -35,6 +37,7 @@ export const STEP_DIALOGUES: StepDialogue[] = [
     color: '#a78bfa',
     icon: '✦',
     label: 'Validator',
+    sublabel: 'Checks fields in the schema',
     stepNumber: 2,
     totalSteps: 6,
     whatHappens:
@@ -50,12 +53,13 @@ export const STEP_DIALOGUES: StepDialogue[] = [
     color: '#e535ab',
     icon: '⬡',
     label: 'Student Resolver',
+    sublabel: 'Finds student data',
     stepNumber: 3,
     totalSteps: 6,
     whatHappens:
       'GraphQL calls your resolver function for the student field. A resolver is just a JavaScript function you write. GraphQL calls it automatically whenever that field is requested in a query.',
     whatItTakes:
-      '• parent — null here (it\'s a top-level query field)\n• args — { id: "1" } (the argument from your query)\n• context — shared resources like your DB connection and logged-in user',
+      "• parent — null here (it's a top-level query field)\n• args — { id: \"1\" } (the argument from your query)\n• context — shared resources like your DB connection and logged-in user",
     whenYouSeeThis:
       'Every field in your schema has a resolver behind it. When you ask for student, GraphQL knows exactly which function to call to get that data. This is the heart of GraphQL — resolvers are what make the schema come alive with real data.',
     codeExample: `const resolvers = {\n  Query: {\n    student: (parent, args, context) => {\n      // args.id = "1" (from your query)\n      return context.db.findStudent(args.id)\n    }\n  }\n}`,
@@ -65,6 +69,7 @@ export const STEP_DIALOGUES: StepDialogue[] = [
     color: '#fb923c',
     icon: '◉',
     label: 'Database Lookup',
+    sublabel: 'Reads row from SQLite',
     stepNumber: 4,
     totalSteps: 6,
     whatHappens:
@@ -80,6 +85,7 @@ export const STEP_DIALOGUES: StepDialogue[] = [
     color: '#e535ab',
     icon: '⬡',
     label: 'Courses Resolver',
+    sublabel: 'Finds student enrollments',
     stepNumber: 5,
     totalSteps: 6,
     whatHappens:
@@ -95,6 +101,7 @@ export const STEP_DIALOGUES: StepDialogue[] = [
     color: '#4ade80',
     icon: '✓',
     label: 'JSON Response',
+    sublabel: 'Returns data to your app',
     stepNumber: 6,
     totalSteps: 6,
     whatHappens:

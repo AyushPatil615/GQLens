@@ -1,33 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { STEP_DIALOGUES } from '../../data/stepDialogues';
 import { useGraphQLTrace } from '../../hooks/useGraphQLTrace';
 import { PipelineVisualizer } from '../PipelineVisualizer/PipelineVisualizer';
 import { ExecutionTimeline } from '../ExecutionTimeline/ExecutionTimeline';
 import { StepDialoguePanel } from './StepDialoguePanel';
+import type { DomainConfig } from '../../data/domains';
+import { buildDomainQuery } from '../../data/domains';
 
-// ─── Field state ──────────────────────────────────────────────────────
-interface Fields { name: boolean; age: boolean; courses: boolean }
-
-function buildQuery(f: Fields): string {
-  const lines = [
-    '    name',
-    f.age     ? '    age'                               : null,
-    f.courses ? '    courses {\n      title\n    }' : null,
-  ].filter(Boolean).join('\n');
-  return `query {\n  student(id: "1") {\n${lines}\n  }\n}`;
-}
-
-// ─── Design tokens ────────────────────────────────────────────────────
-const STEP_COLORS: Record<string, string> = {
-  'parse':           '#87CEEF',
-  'validate':        '#C4B5FD',
-  'resolve:Student': '#FDA4AF',
-  'db:query':        '#FDB97D',
-  'resolve:courses': '#FCA5A5',
-  'respond':         '#86EFAC',
-};
-
+// FLOATERS and COMPLETE_CAPTION stay the same
 const FLOATERS = [
   { char: '⬡', color: '#87CEEF', top: '12%',   left:   '2.5%',  size: 28 },
   { char: '●', color: '#C4B5FD', top: '8%',    right:  '3.5%',  size: 18 },
@@ -84,11 +64,24 @@ function FieldPill({
 }
 
 // ─── Main component ────────────────────────────────────────────────────
-export function FakeDemo() {
-  const [fields, setFields] = useState<Fields>({ name: true, age: true, courses: true });
+export function FakeDemo({ domain }: { domain: DomainConfig }) {
+  // Build initial active-field map from the domain config
+  const makeDefaultFields = (d: DomainConfig) =>
+    Object.fromEntries(d.fields.map(f => [f.key, f.defaultOn])) as Record<string, boolean>;
+
+  const [fields, setFields] = useState<Record<string, boolean>>(() => makeDefaultFields(domain));
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
 
-  const query = buildQuery(fields);
+  // Reset field toggles when domain changes
+  useEffect(() => {
+    setFields(makeDefaultFields(domain));
+    setSelectedStepId(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [domain.id]);
+
+  const query = buildDomainQuery(domain, fields);
+  const STEP_COLORS = domain.stepColors;
+  const STEP_DIALOGUES = domain.stepDialogues;
 
   // Track whether fields changed after the last run (to show "run with new fields" hint)
   const queryAtLastRunRef = useRef<string | null>(null);
@@ -96,7 +89,7 @@ export function FakeDemo() {
     queryAtLastRunRef.current !== null && queryAtLastRunRef.current !== query;
 
   // ── Real backend hook ───────────────────────────────────────────────
-  const { steps, isRunning, isComplete, isError, errorMsg, responseData, runQuery, reset: resetTrace } = useGraphQLTrace(query);
+  const { steps, isRunning, isComplete, isError, errorMsg, responseData, runQuery, reset: resetTrace } = useGraphQLTrace(query, domain.id);
 
   const totalMs    = steps.reduce((s, e) => s + e.ms, 0);
   const activeStep = !isComplete && steps.length > 0 ? steps[steps.length - 1] : null;
@@ -138,7 +131,9 @@ export function FakeDemo() {
         : '▶  Run Query';
   const btnBg = isRunning ? '#FDB97D' : isError ? '#FCA5A5' : isComplete ? '#86EFAC' : '#FF6B6B';
 
-  function toggleField(key: keyof Fields) {
+  function toggleField(key: string) {
+    const fieldCfg = domain.fields.find(f => f.key === key);
+    if (fieldCfg?.locked) return;
     setFields(prev => ({ ...prev, [key]: !prev[key] }));
   }
 
@@ -261,40 +256,35 @@ export function FakeDemo() {
               color: '#374151',
             }}>
               <div><span style={{ color: '#7c3aed', fontWeight: 700 }}>query</span> {'{'}</div>
-              <div>{'  '}<span style={{ color: '#0369a1', fontWeight: 600 }}>student</span>{'(id: '}<span style={{ color: '#15803d' }}>"1"</span>{')'} {'{'}</div>
-              <div>{'    '}<span style={{ color: '#000', fontWeight: 600 }}>name</span></div>
+              <div>{'  '}<span style={{ color: '#0369a1', fontWeight: 600 }}>{domain.rootField}</span>{'('}{domain.rootArg}{')'} {'{'}</div>
+              <div>{'    '}<span style={{ color: '#000', fontWeight: 600 }}>{domain.fields[0].key}</span></div>
 
-              <AnimatePresence initial={false}>
-                {fields.age && (
-                  <motion.div
-                    key="age"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    style={{ overflow: 'hidden' }}
-                  >
-                    <div>{'    '}<span style={{ color: '#000', fontWeight: 600 }}>age</span></div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <AnimatePresence initial={false}>
-                {fields.courses && (
-                  <motion.div
-                    key="courses"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    style={{ overflow: 'hidden' }}
-                  >
-                    <div>{'    '}<span style={{ color: '#0369a1', fontWeight: 600 }}>courses</span> {'{'}</div>
-                    <div>{'      '}<span style={{ color: '#000', fontWeight: 600 }}>title</span></div>
-                    <div>{'    }'}</div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {domain.fields.slice(1).map(f => (
+                <AnimatePresence key={f.key} initial={false}>
+                  {fields[f.key] && (
+                    <motion.div
+                      key={f.key}
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      style={{ overflow: 'hidden' }}
+                    >
+                      {f.nestedSelection ? (
+                        <>
+                          <div>{'    '}<span style={{ color: '#0369a1', fontWeight: 600 }}>{f.key}</span> {'{'}</div>
+                          {f.nestedSelection.split('\n').map((line, i) => (
+                            <div key={i}>{'    '}<span style={{ color: '#000', fontWeight: 600 }}>{line.trim()}</span></div>
+                          ))}
+                          <div>{'    }'}</div>
+                        </>
+                      ) : (
+                        <div>{'    '}<span style={{ color: '#000', fontWeight: 600 }}>{f.key}</span></div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              ))}
 
               <div>{'  }'}</div>
               <div>{'}'}</div>
@@ -314,43 +304,48 @@ export function FakeDemo() {
                 Fields to fetch
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <FieldPill
-                  label="name" checked={fields.name} locked color="#FDA4AF"
-                />
-                <FieldPill
-                  label="age" checked={fields.age} color="#C4B5FD"
-                  onToggle={() => toggleField('age')}
-                />
-                <FieldPill
-                  label="courses" checked={fields.courses} color="#FDB97D"
-                  onToggle={() => toggleField('courses')}
-                />
+                {domain.fields.map(f => (
+                  <FieldPill
+                    key={f.key}
+                    label={f.key}
+                    checked={!!fields[f.key]}
+                    locked={f.locked}
+                    color={f.color}
+                    onToggle={f.locked ? undefined : () => toggleField(f.key)}
+                  />
+                ))}
               </div>
 
-              {/* Insight tip — shows when courses is off */}
-              <AnimatePresence>
-                {!fields.courses && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.22 }}
-                    style={{ overflow: 'hidden' }}
-                  >
-                    <div style={{
-                      marginTop: 10, padding: '8px 10px',
-                      background: '#FEF9C3',
-                      border: '2px solid #000',
-                      boxShadow: '2px 2px 0 #000',
-                      borderRadius: 8,
-                      fontSize: 11, fontWeight: 600, color: '#000',
-                      lineHeight: 1.5,
-                    }}>
-                      💡 <strong>Watch the pipeline!</strong> Courses Resolver will be <em>skipped</em> — GraphQL only runs what you ask for.
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {/* Insight tip — shows when the nested field is toggled off */}
+              {(() => {
+                const nestedField = domain.fields.find(f => f.nestedSelection);
+                if (!nestedField) return null;
+                return (
+                  <AnimatePresence>
+                    {!fields[nestedField.key] && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.22 }}
+                        style={{ overflow: 'hidden' }}
+                      >
+                        <div style={{
+                          marginTop: 10, padding: '8px 10px',
+                          background: '#FEF9C3',
+                          border: '2px solid #000',
+                          boxShadow: '2px 2px 0 #000',
+                          borderRadius: 8,
+                          fontSize: 11, fontWeight: 600, color: '#000',
+                          lineHeight: 1.5,
+                        }}>
+                          💡 <strong>Watch the pipeline!</strong> {nestedField.key.charAt(0).toUpperCase() + nestedField.key.slice(1)} Resolver will be <em>skipped</em> — GraphQL only runs what you ask for.
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                );
+              })()}
             </div>
           </div>
 
@@ -468,6 +463,7 @@ export function FakeDemo() {
           )}
 
           <PipelineVisualizer
+            stepDialogues={STEP_DIALOGUES}
             activeStepId={activeStepId}
             completedStepIds={completedStepIds}
             isComplete={isComplete}

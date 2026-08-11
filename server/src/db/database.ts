@@ -12,7 +12,7 @@ export const db = new Database(DB_PATH);
 // ─── Enable WAL for performance ──────────────────────────────────────
 db.pragma('journal_mode = WAL');
 
-// ─── Create tables ───────────────────────────────────────────────────
+// ─── Education tables ────────────────────────────────────────────────
 db.exec(`
   CREATE TABLE IF NOT EXISTS students (
     id   TEXT PRIMARY KEY,
@@ -35,25 +35,50 @@ db.exec(`
   );
 `);
 
+// ─── Healthcare tables ───────────────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS doctors (
+    id        TEXT PRIMARY KEY,
+    name      TEXT NOT NULL,
+    specialty TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS patients (
+    id   TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    age  INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS appointments (
+    id         TEXT PRIMARY KEY,
+    patient_id TEXT NOT NULL,
+    doctor_id  TEXT NOT NULL,
+    date       TEXT NOT NULL,
+    FOREIGN KEY (patient_id) REFERENCES patients(id),
+    FOREIGN KEY (doctor_id)  REFERENCES doctors(id)
+  );
+`);
+
 // ─── Seed data (idempotent) ──────────────────────────────────────────
-const seedStudents = db.prepare(`INSERT OR IGNORE INTO students VALUES (?, ?, ?)`);
-const seedCourses  = db.prepare(`INSERT OR IGNORE INTO courses  VALUES (?, ?, ?)`);
-const seedEnroll   = db.prepare(`INSERT OR IGNORE INTO enrollments VALUES (?, ?)`);
+const seedStudents  = db.prepare(`INSERT OR IGNORE INTO students VALUES (?, ?, ?)`);
+const seedCourses   = db.prepare(`INSERT OR IGNORE INTO courses  VALUES (?, ?, ?)`);
+const seedEnroll    = db.prepare(`INSERT OR IGNORE INTO enrollments VALUES (?, ?)`);
+const seedDoctors   = db.prepare(`INSERT OR IGNORE INTO doctors VALUES (?, ?, ?)`);
+const seedPatients  = db.prepare(`INSERT OR IGNORE INTO patients VALUES (?, ?, ?)`);
+const seedAppointment = db.prepare(`INSERT OR IGNORE INTO appointments VALUES (?, ?, ?, ?)`);
 
 const seedAll = db.transaction(() => {
-  // Students
-  seedStudents.run('1', 'Alex Rivera',    21);
-  seedStudents.run('2', 'Priya Sharma',   23);
-  seedStudents.run('3', 'Jordan Lee',     20);
+  // ── Education ──
+  seedStudents.run('1', 'Alex Rivera',  21);
+  seedStudents.run('2', 'Priya Sharma', 23);
+  seedStudents.run('3', 'Jordan Lee',   20);
 
-  // Courses
   seedCourses.run('c1', 'Intro to Computer Science', 'Dr. Chen');
   seedCourses.run('c2', 'Data Structures',            'Prof. Patel');
   seedCourses.run('c3', 'Web Development',            'Dr. Martinez');
   seedCourses.run('c4', 'Databases & SQL',             'Prof. Kim');
   seedCourses.run('c5', 'Algorithms',                 'Dr. Johnson');
 
-  // Enrollments
   seedEnroll.run('1', 'c1');
   seedEnroll.run('1', 'c3');
   seedEnroll.run('2', 'c1');
@@ -61,15 +86,31 @@ const seedAll = db.transaction(() => {
   seedEnroll.run('2', 'c4');
   seedEnroll.run('3', 'c3');
   seedEnroll.run('3', 'c5');
+
+  // ── Healthcare ──
+  seedDoctors.run('d1', 'Dr. Gregory House',    'Diagnostic Medicine');
+  seedDoctors.run('d2', 'Dr. Beverly Crusher',  'General Medicine');
+  seedDoctors.run('d3', 'Dr. Miranda Bailey',   'Cardiology');
+  seedDoctors.run('d4', 'Dr. Meredith Grey',    'Neurology');
+
+  seedPatients.run('p1', 'Sarah Connor',  29);
+  seedPatients.run('p2', 'John Watson',   38);
+  seedPatients.run('p3', 'Elena Gilbert', 24);
+
+  seedAppointment.run('a1', 'p1', 'd1', '2025-03-12');
+  seedAppointment.run('a2', 'p1', 'd2', '2025-04-05');
+  seedAppointment.run('a3', 'p2', 'd3', '2025-03-20');
+  seedAppointment.run('a4', 'p2', 'd1', '2025-05-10');
+  seedAppointment.run('a5', 'p3', 'd4', '2025-04-18');
 });
 
 seedAll();
 
-// ─── Typed query helpers ─────────────────────────────────────────────
-export interface StudentRow { id: string; name: string; age: number }
-export interface CourseRow  { id: string; title: string; instructor: string }
+// ─── Education typed query helpers ───────────────────────────────────
+export interface StudentRow     { id: string; name: string; age: number }
+export interface CourseRow      { id: string; title: string; instructor: string }
 
-export const queries = {
+export const educationQueries = {
   getStudent: db.prepare<[string], StudentRow>(
     `SELECT * FROM students WHERE id = ?`
   ),
@@ -83,4 +124,28 @@ export const queries = {
   ),
 };
 
+// ─── Healthcare typed query helpers ──────────────────────────────────
+export interface PatientRow     { id: string; name: string; age: number }
+export interface DoctorRow      { id: string; name: string; specialty: string }
+export interface AppointmentRow { id: string; patient_id: string; doctor_id: string; date: string }
+
+export const healthcareQueries = {
+  getPatient: db.prepare<[string], PatientRow>(
+    `SELECT * FROM patients WHERE id = ?`
+  ),
+  getAllPatients: db.prepare<[], PatientRow>(
+    `SELECT * FROM patients`
+  ),
+  getAppointmentsForPatient: db.prepare<[string], AppointmentRow>(
+    `SELECT * FROM appointments WHERE patient_id = ?`
+  ),
+  getDoctor: db.prepare<[string], DoctorRow>(
+    `SELECT * FROM doctors WHERE id = ?`
+  ),
+};
+
+// Legacy export alias so existing resolver imports don't break
+export const queries = educationQueries;
+
 console.log('✅ SQLite database ready at', DB_PATH);
+
