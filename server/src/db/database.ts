@@ -144,8 +144,74 @@ export const healthcareQueries = {
   ),
 };
 
+
+// ─── Enriched row types for mutation snapshots ───────────────────────────────
+export interface EnrollmentSnapshot {
+  studentId:   string;
+  courseId:    string;
+  studentName: string;
+  courseName:  string;
+}
+
+export interface AppointmentSnapshot {
+  id:          string;
+  patientId:   string;
+  doctorId:    string;
+  date:        string;
+  patientName: string;
+  doctorName:  string;
+}
+
+// ─── Education mutation helpers ───────────────────────────────────────────────
+export const educationMutations = {
+  /** Enriched snapshot of all enrollments for a student */
+  getEnrollmentSnapshot: db.prepare<[string], EnrollmentSnapshot>(
+    `SELECT e.student_id AS studentId, e.course_id AS courseId,
+            s.name AS studentName, c.title AS courseName
+     FROM enrollments e
+     JOIN students s ON s.id = e.student_id
+     JOIN courses  c ON c.id = e.course_id
+     WHERE e.student_id = ?
+     ORDER BY c.title`
+  ),
+  enroll: db.prepare<[string, string], void>(
+    `INSERT OR IGNORE INTO enrollments (student_id, course_id) VALUES (?, ?)`
+  ),
+  unenroll: db.prepare<[string, string], void>(
+    `DELETE FROM enrollments WHERE student_id = ? AND course_id = ?`
+  ),
+  /** Returns true if the enrollment exists */
+  isEnrolled: db.prepare<[string, string], { cnt: number }>(
+    `SELECT COUNT(*) AS cnt FROM enrollments WHERE student_id = ? AND course_id = ?`
+  ),
+};
+
+// ─── Healthcare mutation helpers ──────────────────────────────────────────────
+export const healthcareMutations = {
+  /** Enriched snapshot of all appointments for a patient */
+  getAppointmentSnapshot: db.prepare<[string], AppointmentSnapshot>(
+    `SELECT a.id, a.patient_id AS patientId, a.doctor_id AS doctorId, a.date,
+            p.name AS patientName, d.name AS doctorName
+     FROM appointments a
+     JOIN patients p ON p.id = a.patient_id
+     JOIN doctors  d ON d.id = a.doctor_id
+     WHERE a.patient_id = ?
+     ORDER BY a.date`
+  ),
+  scheduleAppointment: db.prepare<[string, string, string], void>(
+    `INSERT INTO appointments (id, patient_id, doctor_id, date)
+     VALUES (lower(hex(randomblob(4))), ?, ?, ?)`
+  ),
+  cancelAppointment: db.prepare<[string], { patient_id: string }>(
+    `DELETE FROM appointments WHERE id = ? RETURNING patient_id`
+  ),
+  /** Get patient_id for an appointment (needed to fetch snapshot after cancel) */
+  getAppointmentPatientId: db.prepare<[string], { patient_id: string }>(
+    `SELECT patient_id FROM appointments WHERE id = ?`
+  ),
+};
+
 // Legacy export alias so existing resolver imports don't break
 export const queries = educationQueries;
 
 console.log('✅ SQLite database ready at', DB_PATH);
-

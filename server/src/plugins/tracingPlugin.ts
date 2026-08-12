@@ -2,10 +2,16 @@ import type { ApolloServerPlugin, GraphQLRequestContext } from '@apollo/server';
 import { emitTrace, emitDone } from '../tracer';
 
 // Root-level resolver fields we want to surface in the pipeline visualizer.
-// Pattern: { Query field name → step id that gets emitted }
+// Pattern: { Query/Mutation field name → step id that gets emitted }
 const ROOT_RESOLVER_STEPS: Record<string, string> = {
+  // Queries
   student: 'resolve:Student',
   patient: 'resolve:Patient',
+  // Mutations
+  enrollStudent:       'resolve:enrollStudent',
+  unenrollStudent:     'resolve:unenrollStudent',
+  scheduleAppointment: 'resolve:scheduleAppointment',
+  cancelAppointment:   'resolve:cancelAppointment',
 };
 
 // Nested resolver fields we want to surface.
@@ -21,6 +27,10 @@ const STEP_CAPTIONS: Record<string, string> = {
   'resolve:Patient':      'Ran the Patient resolver — a function that knows how to find patient data.',
   'resolve:courses':      'Ran the Courses resolver — fetching which classes this student is enrolled in.',
   'resolve:appointments': 'Ran the Appointments resolver — fetching this patient\'s scheduled appointments.',
+  'resolve:enrollStudent':       'Ran the enrollStudent resolver — the function that writes a new enrollment row.',
+  'resolve:unenrollStudent':     'Ran the unenrollStudent resolver — the function that removes the enrollment row.',
+  'resolve:scheduleAppointment': 'Ran the scheduleAppointment resolver — inserts a new appointment into the database.',
+  'resolve:cancelAppointment':   'Ran the cancelAppointment resolver — removes the appointment from the database.',
 };
 
 export function createTracingPlugin(): ApolloServerPlugin {
@@ -67,8 +77,8 @@ export function createTracingPlugin(): ApolloServerPlugin {
               const t = Date.now();
 
               return () => {
-                // Root query resolver (student, patient, …)
-                if (typeName === 'Query') {
+                // Root query or mutation resolver
+                if (typeName === 'Query' || typeName === 'Mutation') {
                   const stepId = ROOT_RESOLVER_STEPS[fieldName];
                   if (stepId) {
                     emitTrace(requestId, {

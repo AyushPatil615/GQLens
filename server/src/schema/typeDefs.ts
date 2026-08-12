@@ -35,6 +35,41 @@ export const typeDefs = gql`
     doctor: Doctor!
   }
 
+  # ─── Mutation payload types ───────────────────────────────────────
+  """A row in the enrollments table, enriched with names for display"""
+  type EnrollmentRow {
+    studentId:  ID!
+    courseId:   ID!
+    studentName: String!
+    courseName:  String!
+  }
+
+  """Result returned from enrollStudent / unenrollStudent"""
+  type MutationPayload {
+    success: Boolean!
+    message: String!
+    before:  [EnrollmentRow!]!
+    after:   [EnrollmentRow!]!
+  }
+
+  """A row in the appointments table, enriched for display"""
+  type AppointmentRow {
+    id:         ID!
+    patientId:  ID!
+    doctorId:   ID!
+    date:       String!
+    patientName: String!
+    doctorName:  String!
+  }
+
+  """Result returned from scheduleAppointment / cancelAppointment"""
+  type AppointmentMutationPayload {
+    success: Boolean!
+    message: String!
+    before:  [AppointmentRow!]!
+    after:   [AppointmentRow!]!
+  }
+
   # ─── Combined Query ───────────────────────────────────────────────
   type Query {
     """Fetch a single student by ID (Education domain)"""
@@ -48,5 +83,20 @@ export const typeDefs = gql`
 
     """Fetch all patients"""
     patients: [Patient!]!
+  }
+
+  # ─── Mutations ────────────────────────────────────────────────────
+  type Mutation {
+    """Enroll a student in a course (Education domain)"""
+    enrollStudent(studentId: ID!, courseId: ID!): MutationPayload!
+
+    """Remove a student from a course (Education domain)"""
+    unenrollStudent(studentId: ID!, courseId: ID!): MutationPayload!
+
+    """Schedule an appointment for a patient (Healthcare domain)"""
+    scheduleAppointment(patientId: ID!, doctorId: ID!, date: String!): AppointmentMutationPayload!
+
+    """Cancel an existing appointment (Healthcare domain)"""
+    cancelAppointment(appointmentId: ID!): AppointmentMutationPayload!
   }
 `;

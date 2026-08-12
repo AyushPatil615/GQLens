@@ -4,6 +4,8 @@
 // never reads this file — it's used only by App.tsx and FakeDemo.tsx.
 
 import type { StepDialogue } from './stepDialogues';
+import type { MutationOperationConfig } from './mutations';
+import { educationMutations, healthcareMutations } from './mutations';
 
 export type DomainId = 'education' | 'healthcare';
 
@@ -31,6 +33,8 @@ export interface DomainConfig {
   stepColors: Record<string, string>;
   // ── Step dialogues (right-panel content) ─────────────────────────
   stepDialogues: StepDialogue[];
+  // ── Available mutations for this domain ───────────────────
+  mutations: MutationOperationConfig[];
 }
 
 // ─── Query Builder ────────────────────────────────────────────────────────
@@ -164,6 +168,7 @@ export const EDUCATION_DOMAIN: DomainConfig = {
     'respond':         '#86EFAC',
   },
   stepDialogues: educationStepDialogues,
+  mutations: educationMutations,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -282,6 +287,7 @@ export const HEALTHCARE_DOMAIN: DomainConfig = {
     'respond':              '#86EFAC',
   },
   stepDialogues: healthcareStepDialogues,
+  mutations: healthcareMutations,
 };
 
 // ─── Domain registry ──────────────────────────────────────────────────────

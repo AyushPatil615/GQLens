@@ -1,11 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGraphQLTrace } from '../../hooks/useGraphQLTrace';
+import { useMutationTrace } from '../../hooks/useMutationTrace';
 import { PipelineVisualizer } from '../PipelineVisualizer/PipelineVisualizer';
 import { ExecutionTimeline } from '../ExecutionTimeline/ExecutionTimeline';
 import { StepDialoguePanel } from './StepDialoguePanel';
+import { MutationBuilder } from '../MutationDemo/MutationBuilder';
+import { DataDiffPanel } from '../MutationDemo/DataDiffPanel';
+import { PresetQueriesPanel } from './PresetQueriesPanel';
+import { DOMAIN_PRESETS } from '../../data/queryExamples';
 import type { DomainConfig } from '../../data/domains';
 import { buildDomainQuery } from '../../data/domains';
+import type { MutationOperationConfig } from '../../data/mutations';
 
 // FLOATERS and COMPLETE_CAPTION stay the same
 const FLOATERS = [
@@ -65,6 +71,14 @@ function FieldPill({
 
 // ─── Main component ────────────────────────────────────────────────────
 export function FakeDemo({ domain }: { domain: DomainConfig }) {
+  // ── Mode: query vs mutation ────────────────────────────────────────
+  const [mode, setMode] = useState<'query' | 'mutation'>('query');
+
+  // Active mutation operation (for mutation mode)
+  const [activeMutOp, setActiveMutOp] = useState<MutationOperationConfig | null>(
+    domain.mutations[0] ?? null
+  );
+
   // Build initial active-field map from the domain config
   const makeDefaultFields = (d: DomainConfig) =>
     Object.fromEntries(d.fields.map(f => [f.key, f.defaultOn])) as Record<string, boolean>;
@@ -72,16 +86,41 @@ export function FakeDemo({ domain }: { domain: DomainConfig }) {
   const [fields, setFields] = useState<Record<string, boolean>>(() => makeDefaultFields(domain));
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
 
-  // Reset field toggles when domain changes
+  // Reset field toggles, mode, and mutation op when domain changes
   useEffect(() => {
     setFields(makeDefaultFields(domain));
     setSelectedStepId(null);
+    setMode('query');
+    setActiveMutOp(domain.mutations[0] ?? null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [domain.id]);
 
   const query = buildDomainQuery(domain, fields);
-  const STEP_COLORS = domain.stepColors;
-  const STEP_DIALOGUES = domain.stepDialogues;
+  const STEP_COLORS    = mode === 'mutation' && activeMutOp ? activeMutOp.stepColors    : domain.stepColors;
+  const STEP_DIALOGUES = mode === 'mutation' && activeMutOp ? activeMutOp.stepDialogues : domain.stepDialogues;
+
+  // Editable query text (query mode)
+  const [editedQueryText, setEditedQueryText] = useState(query);
+  const isQueryCustom = editedQueryText.trim() !== query.trim();
+
+  // Keep in sync when field toggles change (only if user hasn't diverged)
+  useEffect(() => {
+    if (!isQueryCustom) setEditedQueryText(query);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  // Reset editedQueryText when domain changes
+  useEffect(() => {
+    setEditedQueryText(buildDomainQuery(domain, Object.fromEntries(domain.fields.map(f => [f.key, f.defaultOn]))));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [domain.id]);
+
+  // ── Mutation trace hook ───────────────────────────────────────────
+  const {
+    steps: mutSteps, isRunning: mutRunning, isComplete: mutComplete,
+    isError: mutError, errorMsg: mutErrorMsg, result: mutResult,
+    runMutation, reset: mutReset,
+  } = useMutationTrace(domain.id);
 
   // Track whether fields changed after the last run (to show "run with new fields" hint)
   const queryAtLastRunRef = useRef<string | null>(null);
@@ -116,8 +155,8 @@ export function FakeDemo({ domain }: { domain: DomainConfig }) {
   }
 
   function handleRunQuery() {
-    queryAtLastRunRef.current = query;
-    runQuery();
+    queryAtLastRunRef.current = editedQueryText;
+    runQuery(editedQueryText);
   }
 
   // ── Button label ────────────────────────────────────────────────────
@@ -200,18 +239,59 @@ export function FakeDemo({ domain }: { domain: DomainConfig }) {
           }}
         />
 
+
         <motion.p
+          key={mode}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.25 }}
           style={{
             fontSize: 15.5, color: 'var(--text-mid)',
-            maxWidth: 480, margin: '0 auto', lineHeight: 1.65,
+            maxWidth: 480, margin: '0 auto 20px', lineHeight: 1.65,
             fontWeight: 600,
           }}
         >
-          Click <strong style={{ color: '#000' }}>Run Query</strong> to see every step explained — what happens, what it takes, and why it matters.
+          {mode === 'query'
+            ? <>Click <strong style={{ color: '#000' }}>Run Query</strong> to see every step explained — what happens, what it takes, and why it matters.</>
+            : <>Select a <strong style={{ color: '#000' }}>write operation</strong>, pick the arguments, then run it to see what changes in the database.</>
+          }
         </motion.p>
+
+        {/* ── Mode toggle ── */}
+        <div style={{
+          display: 'inline-flex',
+          background: 'var(--bg-base)',
+          border: 'var(--border-2)',
+          borderRadius: 12,
+          padding: 3,
+          gap: 3,
+          boxShadow: '3px 3px 0 #000',
+        }}>
+          {(['query', 'mutation'] as const).map(m => (
+            <motion.button
+              key={m}
+              onClick={() => {
+                setMode(m);
+                if (m === 'query') mutReset();
+              }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              style={{
+                padding: '7px 18px',
+                borderRadius: 9,
+                border: 'none',
+                background: mode === m ? '#000' : 'transparent',
+                color: mode === m ? '#fff' : 'var(--text-mid)',
+                fontSize: 12.5, fontWeight: 800,
+                fontFamily: 'var(--font-sans)',
+                cursor: 'pointer',
+                transition: 'background 0.15s, color 0.15s',
+              }}
+            >
+              {m === 'query' ? '🔍 Query' : '✏️ Write'}
+            </motion.button>
+          ))}
+        </div>
       </div>
 
       {/* ── Three columns ── */}
@@ -221,9 +301,23 @@ export function FakeDemo({ domain }: { domain: DomainConfig }) {
         position: 'relative', zIndex: 1,
       }}>
 
-        {/* ── COL 1: Query panel + Field picker ── */}
+        {/* ── COL 1: Query builder (query mode) or Mutation builder (mutation mode) ── */}
         <div style={{ flex: '1 1 280px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
 
+          {mode === 'mutation' ? (
+            <MutationBuilder
+              operations={domain.mutations}
+              onRun={(mutText, op) => {
+                setActiveMutOp(op);
+                runMutation(mutText);
+              }}
+              isRunning={mutRunning}
+              isComplete={mutComplete}
+              isError={mutError}
+              onReset={mutReset}
+            />
+          ) : (
+            <>
           {/* Editor card */}
           <div style={{
             background: '#fff',
@@ -236,58 +330,60 @@ export function FakeDemo({ domain }: { domain: DomainConfig }) {
             <div style={{
               padding: '9px 14px', borderBottom: 'var(--border-2)',
               background: '#f9f5f0',
-              display: 'flex', alignItems: 'center', gap: 8,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
             }}>
-              <div style={{ display: 'flex', gap: 5 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f57', border: '1.5px solid #000' }} />
                 <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#febc2e', border: '1.5px solid #000' }} />
                 <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#28c840', border: '1.5px solid #000' }} />
+                <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-mono)', color: '#000', marginLeft: 4 }}>
+                  {isQueryCustom ? 'custom.graphql' : 'query.graphql'}
+                </span>
+                {isQueryCustom && (
+                  <span style={{
+                    fontSize: 9, fontWeight: 800,
+                    background: '#ede9fe', color: '#7c3aed',
+                    border: '1px solid #7c3aed', borderRadius: 4,
+                    padding: '1px 5px', marginLeft: 4,
+                  }}>CUSTOM</span>
+                )}
               </div>
-              <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-mono)', color: '#000' }}>
-                query.graphql
-              </span>
+              {isQueryCustom && !isRunning && !isComplete && (
+                <button
+                  onClick={() => setEditedQueryText(query)}
+                  style={{
+                    fontSize: 9.5, fontWeight: 800, color: '#7c3aed',
+                    background: 'transparent', border: 'none',
+                    cursor: 'pointer', padding: '2px 6px', borderRadius: 4,
+                  }}
+                >↺ Reset</button>
+              )}
             </div>
 
-            {/* Dynamic code display */}
+            {/* Editable query textarea */}
             <div style={{
-              margin: 0, padding: '16px 20px',
-              fontFamily: 'var(--font-mono)', fontSize: 12.5,
-              lineHeight: 1.9, background: '#fff',
-              color: '#374151',
+              border: isQueryCustom ? '2px solid #7c3aed' : 'none',
+              transition: 'border-color 0.2s',
             }}>
-              <div><span style={{ color: '#7c3aed', fontWeight: 700 }}>query</span> {'{'}</div>
-              <div>{'  '}<span style={{ color: '#0369a1', fontWeight: 600 }}>{domain.rootField}</span>{'('}{domain.rootArg}{')'} {'{'}</div>
-              <div>{'    '}<span style={{ color: '#000', fontWeight: 600 }}>{domain.fields[0].key}</span></div>
-
-              {domain.fields.slice(1).map(f => (
-                <AnimatePresence key={f.key} initial={false}>
-                  {fields[f.key] && (
-                    <motion.div
-                      key={f.key}
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      style={{ overflow: 'hidden' }}
-                    >
-                      {f.nestedSelection ? (
-                        <>
-                          <div>{'    '}<span style={{ color: '#0369a1', fontWeight: 600 }}>{f.key}</span> {'{'}</div>
-                          {f.nestedSelection.split('\n').map((line, i) => (
-                            <div key={i}>{'    '}<span style={{ color: '#000', fontWeight: 600 }}>{line.trim()}</span></div>
-                          ))}
-                          <div>{'    }'}</div>
-                        </>
-                      ) : (
-                        <div>{'    '}<span style={{ color: '#000', fontWeight: 600 }}>{f.key}</span></div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              ))}
-
-              <div>{'  }'}</div>
-              <div>{'}'}</div>
+              <textarea
+                value={editedQueryText}
+                onChange={e => setEditedQueryText(e.target.value)}
+                disabled={isRunning || isComplete}
+                spellCheck={false}
+                style={{
+                  width: '100%', display: 'block',
+                  minHeight: 160,
+                  padding: '16px 20px',
+                  fontFamily: 'var(--font-mono)', fontSize: 12.5,
+                  lineHeight: 1.9,
+                  background: (isRunning || isComplete) ? '#f9fafb' : '#fff',
+                  color: '#374151',
+                  border: 'none', outline: 'none',
+                  resize: 'vertical',
+                  boxSizing: 'border-box',
+                  cursor: (isRunning || isComplete) ? 'not-allowed' : 'text',
+                }}
+              />
             </div>
 
             {/* ── Field picker ── */}
@@ -433,7 +529,21 @@ export function FakeDemo({ domain }: { domain: DomainConfig }) {
                 })}
               </motion.div>
             )}
-          </AnimatePresence>
+            </AnimatePresence>
+
+            {/* ── Preset Queries Panel ── */}
+            <PresetQueriesPanel
+              presets={DOMAIN_PRESETS[domain.id] || DOMAIN_PRESETS.education}
+              disabled={isRunning}
+              onSelectPreset={(preset) => {
+                if (isComplete || isError) {
+                  reset();
+                }
+                setEditedQueryText(preset.query);
+              }}
+            />
+          </>
+          )}
         </div>
 
         {/* ── COL 2: Pipeline ── */}
@@ -453,31 +563,47 @@ export function FakeDemo({ domain }: { domain: DomainConfig }) {
             Execution Pipeline
           </div>
 
-          {!isRunning && !isComplete && (
+          {!(mode === 'mutation' ? mutRunning : isRunning) && !(mode === 'mutation' ? mutComplete : isComplete) && (
             <p style={{
               fontSize: 12, color: 'var(--text-grey)',
               textAlign: 'center', padding: '16px 0', fontWeight: 600,
             }}>
-              Hit <strong style={{ color: '#000' }}>Run Query</strong><br />to watch the pipeline light up
+              Hit <strong style={{ color: '#000' }}>{mode === 'mutation' ? 'Run Write' : 'Run Query'}</strong><br />to watch the pipeline light up
             </p>
           )}
 
           <PipelineVisualizer
             stepDialogues={STEP_DIALOGUES}
-            activeStepId={activeStepId}
-            completedStepIds={completedStepIds}
-            isComplete={isComplete}
+            activeStepId={mode === 'mutation' ? (mutComplete ? null : (mutSteps[mutSteps.length - 1]?.step ?? null)) : activeStepId}
+            completedStepIds={mode === 'mutation'
+              ? (mutComplete ? mutSteps.map(s => s.step) : mutSteps.slice(0, Math.max(0, mutSteps.length - 1)).map(s => s.step))
+              : completedStepIds
+            }
+            isComplete={mode === 'mutation' ? mutComplete : isComplete}
             selectedStepId={selectedStepId}
             onStepClick={handleStepClick}
           />
         </div>
 
-        {/* ── COL 3: Dialogue ── */}
-        <StepDialoguePanel
-          dialogue={activeDialogue}
-          isComplete={isComplete}
-          responseData={responseData}
-        />
+        {/* ── COL 3: Step explanation (query mode) or Data Diff (mutation mode) ── */}
+        {mode === 'mutation' && activeMutOp ? (
+          <DataDiffPanel
+            operation={activeMutOp}
+            before={(mutResult?.before as Record<string, string>[] | undefined) ?? []}
+            after={(mutResult?.after as Record<string, string>[] | undefined) ?? []}
+            isComplete={mutComplete}
+            isError={mutError}
+            errorMsg={mutErrorMsg ?? ''}
+            success={mutResult?.success ?? false}
+            message={mutResult?.message ?? ''}
+          />
+        ) : (
+          <StepDialoguePanel
+            dialogue={activeDialogue}
+            isComplete={isComplete}
+            responseData={responseData}
+          />
+        )}
       </div>
 
       {/* ── Timeline ── */}
@@ -487,11 +613,14 @@ export function FakeDemo({ domain }: { domain: DomainConfig }) {
         position: 'relative', zIndex: 1,
       }}>
         <ExecutionTimeline
-          steps={steps}
-          activeIndex={steps.length}
-          caption={caption}
-          isComplete={isComplete}
-          totalMs={totalMs}
+          steps={mode === 'mutation' ? mutSteps : steps}
+          activeIndex={mode === 'mutation' ? mutSteps.length : steps.length}
+          caption={mode === 'mutation'
+            ? (mutComplete ? 'Mutation complete! The database was updated and the diff is ready.' : (mutSteps[mutSteps.length - 1]?.caption ?? ''))
+            : caption
+          }
+          isComplete={mode === 'mutation' ? mutComplete : isComplete}
+          totalMs={(mode === 'mutation' ? mutSteps : steps).reduce((s, e) => s + e.ms, 0)}
         />
       </div>
     </div>

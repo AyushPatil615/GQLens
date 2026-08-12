@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { RestaurantMetaphorDemo } from './RestaurantMetaphor';
 
 // ─── Data ─────────────────────────────────────────────────────────────
 interface RestCall {
@@ -252,6 +253,9 @@ export function RestComparison({ onTryDemo }: { onTryDemo: () => void }) {
             Watch how fast that adds up.
           </p>
         </motion.div>
+
+        {/* ── Interactive Restaurant Metaphor ── */}
+        <RestaurantMetaphorDemo />
 
         {/* ── Animation area ── */}
         <div style={{

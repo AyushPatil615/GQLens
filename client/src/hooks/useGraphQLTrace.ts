@@ -39,7 +39,7 @@ export function useGraphQLTrace(query: string, domainId = 'education') {
     setErrorMsg(null);
   }, []);
 
-  const runQuery = useCallback(async () => {
+  const runQuery = useCallback(async (overrideQuery?: string) => {
     if (isRunning) return;
     reset();
 
@@ -107,7 +107,7 @@ export function useGraphQLTrace(query: string, domainId = 'education') {
           'x-request-id':  requestId,
           'x-domain-id':   domainId,
         },
-        body: JSON.stringify({ query: queryRef.current }),
+        body: JSON.stringify({ query: overrideQuery ?? queryRef.current }),
       });
 
       if (!res.ok) {
