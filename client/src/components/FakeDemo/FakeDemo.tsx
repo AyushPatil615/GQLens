@@ -8,6 +8,7 @@ import { StepDialoguePanel } from './StepDialoguePanel';
 import { MutationBuilder } from '../MutationDemo/MutationBuilder';
 import { DataDiffPanel } from '../MutationDemo/DataDiffPanel';
 import { PresetQueriesPanel } from './PresetQueriesPanel';
+import { Query3DExplorer } from '../Theory3D/Query3DExplorer';
 import { DOMAIN_PRESETS } from '../../data/queryExamples';
 import type { DomainConfig } from '../../data/domains';
 import { buildDomainQuery } from '../../data/domains';
@@ -604,6 +605,15 @@ export function FakeDemo({ domain }: { domain: DomainConfig }) {
             responseData={responseData}
           />
         )}
+      </div>
+
+      {/* ── 3D Rocket Query Hop Traversal Visualizer ── */}
+      <div style={{
+        padding: '0 24px',
+        maxWidth: 1180, margin: '0 auto', width: '100%',
+        position: 'relative', zIndex: 1,
+      }}>
+        <Query3DExplorer />
       </div>
 
       {/* ── Timeline ── */}
