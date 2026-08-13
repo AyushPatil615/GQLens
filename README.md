@@ -1,15 +1,17 @@
 <p align="center">
   <h1 align="center">⬡ GraphScope</h1>
   <p align="center">
-    <strong>An interactive, visual GraphQL learning tool that streams real execution traces from Apollo Server + SQLite.</strong>
+    <strong>An interactive, visual 3D GraphQL learning platform that streams real execution traces from Apollo Server + PostgreSQL/SQLite.</strong>
   </p>
   <p align="center">
     <a href="#-what-is-graphscope">What is GraphScope</a> •
     <a href="#-the-learning-problem-it-solves">Problem It Solves</a> •
+    <a href="#-the-3-act-student-journey">3-Act Journey</a> •
     <a href="#-what-is-graphql-core-theory">GraphQL Theory</a> •
     <a href="#-what-the-interactive-ui-shows">UI Breakdown</a> •
     <a href="#%EF%B8%8F-architecture--how-it-works">Architecture</a> •
     <a href="#-getting-started">Getting Started</a> •
+    <a href="#-distributed-cloud-deployment">Cloud Deployment</a> •
     <a href="#-design-system">Design System</a> •
     <a href="#-license">License</a>
   </p>
@@ -18,12 +20,13 @@
 ---
 
 <p align="center">
-  <img src="https://img.shields.io/badge/GraphQL-v16.8-e535ab?style=for-the-badge&logo=graphql&logoColor=white" alt="GraphQL">
+  <img src="https://img.shields.io/badge/GraphQL-v16.14-e535ab?style=for-the-badge&logo=graphql&logoColor=white" alt="GraphQL">
   <img src="https://img.shields.io/badge/Apollo%20Server-v4-311C87?style=for-the-badge&logo=apollo-graphql&logoColor=white" alt="Apollo Server">
   <img src="https://img.shields.io/badge/React-v18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
-  <img src="https://img.shields.io/badge/TypeScript-v5-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Three.js-v0.18-000000?style=for-the-badge&logo=three.js&logoColor=white" alt="Three.js">
+  <img src="https://img.shields.io/badge/PostgreSQL-v16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
   <img src="https://img.shields.io/badge/SQLite-v3-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite">
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
+  <img src="https://img.shields.io/badge/TypeScript-v5-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
 </p>
 
 ---
@@ -32,7 +35,7 @@
 
 **GraphScope** is an open-source interactive learning playground built for developers who learn best by watching real systems execute in front of them.
 
-GraphScope runs a **real Apollo Server v4 + SQLite backend** and streams every execution step to the browser over Server-Sent Events (SSE) in real time. The UI animates each step as it happens, explains what the step does, and shows the exact JSON that came back. No mocking, no fake timers for GraphQL — the pipeline you see is the pipeline that ran.
+GraphScope runs a **real Apollo Server v4 backend** (connected to local SQLite or cloud Supabase PostgreSQL) and streams every execution step to the browser over Server-Sent Events (SSE) in real time. The UI animates each step as it happens, explains what the step does, and shows the exact JSON that came back. No mocking, no fake timers — the pipeline you see is the pipeline that ran.
 
 ---
 
@@ -44,8 +47,23 @@ GraphScope makes the abstract concrete:
 
 - **You see the pipeline light up step by step** as the server actually processes your query.
 - **You toggle a field off** (e.g. `courses`) and watch the Courses Resolver go dark — because the server literally never called it.
-- **You read a plain-English explanation** of each step, written for someone who has never heard the word "resolver" before.
-- **You see the actual JSON** that the server returned, shaped exactly like the query you wrote.
+- **You watch a 3D rocket travel planet-to-planet** through execution phases (*Client Planet -> Parser Gas Giant -> Validator Moon -> Resolver Lava World -> Database Cyber Core*).
+- **You see the live N+1 problem** stream separate SQL queries in red, then toggle DataLoader ON to watch them condense into 1 batched query in green.
+- **You read plain-English explanations** of each step, written for someone who has never heard the word "resolver" before.
+- **You see the actual JSON response** returned from the server, shaped identically to the query you wrote.
+
+---
+
+## 🎬 The 3-Act Student Journey
+
+```text
+ 🍊 The Problem (REST) ────────► ✨ The Solution (GraphQL) ────────► ⚡ Going Deeper
+ (Waterfall requests)           (3D Solar System + Pipeline)        (N+1 & DataLoader)
+```
+
+1. **🍊 The Problem (REST)**: Interactive restaurant metaphor & real network waterfall demonstrating why REST APIs struggle with relational data, overfetching, and underfetching.
+2. **✨ The Solution (GraphQL)**: Live Query Builder & Mutation Editor. Includes a procedural **3D Solar System** where a rocket travels planet-to-planet through GraphQL execution stages.
+3. **⚡ Going Deeper**: Interactive **N+1 Problem & DataLoader Visualizer**. Demonstrates the #1 GraphQL performance pitfall live by streaming real database queries in real-time.
 
 ---
 
@@ -66,9 +84,10 @@ GraphScope makes the abstract concrete:
 |---|---|---|
 | **Schema Definition (SDL)** | The contract defining object types, fields, and queries available on the server. | `type Student { id: ID!, name: String!, age: Int }` |
 | **Query** | A read-only operation requested by the client. | `query { student(id: "1") { name } }` |
-| **Mutation** | A write operation used to insert, update, or delete data on the server. | `mutation { addStudent(name: "Alex") { id } }` |
+| **Mutation** | A write operation used to insert, update, or delete data on the server. | `mutation { enrollStudent(studentId: "1", courseId: "c1") { success } }` |
 | **Subscription** | A real-time WebSocket/Event connection for server-push updates. | `subscription { studentEnrolled { id } }` |
 | **Resolver** | A server-side function that populates data for a specific schema field. | `Query: { student: (_, args) => db.find(args.id) }` |
+| **DataLoader** | A batching & caching utility to solve N+1 database queries. | `new DataLoader(keys => db.getBatched(keys))` |
 | **AST (Abstract Syntax Tree)** | The parsed tree representation of raw query string used during validation & execution. | Internal object generated by `graphql-js` parser |
 
 ### 3. GraphQL vs. REST Comparison
@@ -106,64 +125,40 @@ POST /graphql { student(id:"1") { name age courses { title } } }
                                    21ms  ·  1 request
 ```
 
-The comparison cards then show the concrete numbers: **5.6× faster, 3× fewer requests, 0 over-fetching**. A developer who was unsure *why* GraphQL exists now has a visceral answer.
-
-> *Note: REST timings in this view are simulated for illustration. The GraphQL timing is real — measured from your actual local server.*
+The comparison cards then show the concrete numbers: **5.6× faster, 3× fewer requests, 0 over-fetching**.
 
 ---
 
 ### Tab 2 — The Solution (GraphQL Demo)
 
-A three-column live demo:
+#### Column 1 — Query Builder & Mutation Editor
+- Live code editor for queries & mutations.
+- Field toggles for `name`, `age`, and `courses { title }`.
+- Domain switcher to toggle between **Education** (`students`, `courses`) and **Healthcare** (`patients`, `doctors`).
+- Side-by-side SQL Data Diff panel showing `Before` vs `After` snapshots when running mutations.
 
-#### Column 1 — Query Builder
-A live code editor showing the current GraphQL query. Below it, three field toggles:
-
-| Field | Toggle | Effect |
-|---|---|---|
-| `name` | 🔒 locked | Always required — anchors the query |
-| `age` | ✅ on/off | Toggles the `age` field in the query string |
-| `courses` | ✅ on/off | Toggles the `courses { title }` nested selection set |
-
-When you uncheck `courses`, two things happen instantly:
-1. The code editor animates the `courses { title }` lines out of the query.
-2. A yellow tip appears: *"Watch the pipeline! Courses Resolver will be skipped — GraphQL only runs what you ask for."*
-
-Clicking **Run Query** sends the exact string shown in the editor to the real Apollo Server.
-
-#### Column 2 — Execution Pipeline
-
-Six nodes that light up as the server processes the query:
-
-```text
-◈ Parser           ← reads raw query text → AST
-✦ Validator        ← checks fields exist in schema
-⬡ Student Resolver ← calls your resolver function
-◉ Database         ← runs SELECT against SQLite
-⬡ Courses Resolver ← only runs if courses was requested
-✓ JSON Response    ← assembles and returns JSON
-```
-
-Each node:
-- **Gray** = never ran (e.g. Courses Resolver when `courses` is unchecked)
-- **Pulsing** = currently executing
-- **Colored with ✓** = completed
-- **Clickable** (when complete) = opens the step's full explanation in column 3
-
-If you ran the query without `courses`, the Courses Resolver node stays gray. That gray node is the visual proof that GraphQL's *"only fetch what you ask for"* guarantee is real, not a marketing claim.
+#### Column 2 — 3D Solar System & Execution Pipeline
+- Procedural **Three.js 3D Solar System** with animated rocket flight curve.
+- 5 Execution nodes: `Parser` -> `Validator` -> `Student Resolver` -> `Database Lookup` -> `Courses Resolver` -> `JSON Response`.
+- Nodes light up in real time over SSE. Gray nodes visually prove skipped resolvers.
 
 #### Column 3 — Step Dialogue Panel
+- Explains *How it works*, *What it takes*, *In context*, and *Code example* for whichever step is active.
+- Displays the real JSON response from the server when execution finishes.
 
-Three states:
-- **Idle**: Shows a preview of the four explanation sections available for each step (*How it works / What it takes / In context / Code example*).
-- **Running**: Auto-shows the explanation for whichever step is currently active. Updates in real time as the pipeline advances.
-- **Complete**: Shows the **actual JSON response** from the server in a green code block, along with a clickable list of all steps that ran.
+---
+
+### Tab 3 — ⚡ Going Deeper (N+1 & DataLoader)
+
+- **Context Banner**: Explains why GraphQL has a hidden performance trap ($1 + N$ queries).
+- **Interactive Switcher**: Toggle DataLoader **OFF** (4 separate DB queries in red) vs **ON** (2 batched DB queries in green).
+- Live streaming database query timeline showing exact SQL statements executed by Apollo Server.
 
 ---
 
 ## 🏗️ Architecture & How It Works
 
-The key insight is that the pipeline animation is driven by **real server events**, not pre-scripted timers.
+The execution pipeline and 3D visualizer are driven by **real server events**, not pre-scripted timers.
 
 ```
 Browser (Vite Client :5173)                 Server (Apollo + Express :4000)
@@ -176,15 +171,14 @@ Browser (Vite Client :5173)                 Server (Apollo + Express :4000)
   │                                                      │  ├─ ◈ Parser Hook
   │ ◄── SSE event: { step: "parse", ms: 1 } ─────────────┤  ├─ ✦ Validator Hook
   │ ◄── SSE event: { step: "validate", ms: 6 } ──────────┤  ├─ ⬡ Query.student Resolver
-  │ ◄── SSE event: { step: "resolve:Student" } ──────────┤  ├─ ◉ SQLite DB Query (better-sqlite3)
-  │ ◄── SSE event: { step: "db:query", ms: 8 } ──────────┤  ├─ ⬡ Student.courses Resolver
-  │ ◄── SSE event: { step: "resolve:courses" } ──────────┤  └─ ✓ Response Assembly
-  │ ◄── SSE event: { step: "__done__" } ─────────────────┘
+  │ ◄── SSE event: { step: "db:query", ms: 8 } ──────────┤  ├─ ◉ Database Query (Postgres/SQLite)
+  │ ◄── SSE event: { step: "resolve:courses" } ──────────┤  ├─ ⬡ Student.courses Resolver
+  │ ◄── SSE event: { step: "__done__" } ─────────────────┘  └─ ✓ Response Assembly
   │                                                      │
   └◄── HTTP 200 JSON Response ───────────────────────────┘
 ```
 
-### The Apollo Plugin
+### The Apollo Plugin (`tracingPlugin.ts`)
 
 `server/src/plugins/tracingPlugin.ts` implements `ApolloServerPlugin`. Apollo calls lifecycle hooks at each execution stage — the plugin measures elapsed time and emits an SSE event per step:
 
@@ -201,52 +195,15 @@ async parsingDidStart() {
 },
 ```
 
-The `requestId` ties each SSE event to the correct browser tab. Multiple tabs can run queries simultaneously without cross-contamination.
-
 ### Why `documentStore: null`?
 
-Apollo Server v4 caches parsed and validated query documents in memory by default (its `documentStore`). On repeated runs of the same query string, it reuses the cached AST and **skips** `parsingDidStart` and `validationDidStart` entirely.
+Apollo Server v4 caches parsed and validated query documents in memory by default. On repeated runs of the same query string, it reuses the cached AST and skips `parsingDidStart` and `validationDidStart` entirely.
 
-For a production API this is a sensible optimization. For a learning tool it's fatal — Parser and Validator appear permanently grayed out after the first run.
-
-Setting `documentStore: null` disables the cache, forcing Apollo to re-parse and re-validate every request, so the full 6-step pipeline is always visible.
+Setting `documentStore: null` disables the cache, forcing Apollo to re-parse and re-validate every request so the full pipeline is always visible.
 
 ### The SSE Hook (`useGraphQLTrace`)
 
-```ts
-export function useGraphQLTrace(query: string) {
-  // 1. Open EventSource before sending the query
-  const es = new EventSource(`/events?requestId=${requestId}`);
-
-  // 2. Collect steps as they arrive
-  es.onmessage = (e) => {
-    const event = JSON.parse(e.data);
-    if (event.step === '__done__') { setPhase('complete'); es.close(); return; }
-    setSteps(prev => [...prev, event]);
-  };
-
-  // 3. 80ms later — fire the query
-  await fetch('/graphql', {
-    headers: { 'x-request-id': requestId },
-    body: JSON.stringify({ query }),
-  });
-}
-```
-
-The hook also captures the HTTP response body, surfacing the real JSON in the right panel after the pipeline completes. A 10-second timeout watchdog shows an error banner if the server doesn't respond.
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Tech | Purpose |
-|---|---|---|
-| **Frontend** | React + TypeScript + Vite | Component UI and dev server (port 5173) |
-| **Animations** | Framer Motion | Pipeline node transitions, field line enter/exit, button micro-animations |
-| **Styling** | Vanilla CSS + CSS variables | Cream Neobrutalism design system — bold black borders, offset shadows |
-| **Backend** | Apollo Server v4 + Express | Real GraphQL execution with plugin-based instrumentation (port 4000) |
-| **Database** | SQLite via `better-sqlite3` | Synchronous queries — no async/await complexity in resolvers |
-| **Live Tracing** | Server-Sent Events (SSE) | One-directional push stream from server to browser per execution step |
+The client hook opens an `EventSource` to `/events?requestId=UUID`, listens for streaming step notifications, and fires the HTTP request to `/graphql`. The base URL automatically resolves locally or to cloud backend (`VITE_API_URL`).
 
 ---
 
@@ -256,100 +213,116 @@ The hook also captures the HTTP response body, surfacing the real JSON in the ri
 graphql_learner/
 ├── client/                        # Vite + React 18 Frontend
 │   └── src/
-│       ├── App.tsx                # Tab routing (REST | GraphQL)
-│       ├── index.css              # Design tokens & mobile responsive breakpoints
+│       ├── App.tsx                # 3-Tab Routing (REST | Solution | Going Deeper)
+│       ├── index.css              # Design tokens & mobile breakpoints
+│       ├── config/api.ts          # Base API URL resolver (local / production)
 │       ├── components/
 │       │   ├── FakeDemo/          # Query builder, field toggles & visualizer layout
-│       │   │   ├── FakeDemo.tsx
-│       │   │   └── StepDialoguePanel.tsx
-│       │   ├── PipelineVisualizer/# 6-step animated node visualizer
+│       │   ├── Theory3D/          # 3D Solar System visualizer (Three.js)
+│       │   ├── N1Visualizer/      # N+1 & DataLoader streamer
+│       │   ├── GoingDeeper/       # Advanced topics page layout
+│       │   ├── MutationDemo/      # Mutation builder & SQL diff panel
+│       │   ├── PipelineVisualizer/# Animated node visualizer
 │       │   ├── ExecutionTimeline/ # Horizontal execution timeline bars
 │       │   └── RestVsGraphQL/     # Animated REST vs GraphQL waterfall comparison
-│       ├── data/
-│       │   └── stepDialogues.ts   # Educational content per execution step
-│       └── hooks/
-│           └── useGraphQLTrace.ts # Custom SSE trace listener & HTTP runner hook
+│       ├── data/                  # Schema presets, domain definitions & explanations
+│       └── hooks/                 # Custom SSE trace listeners for queries & mutations
 │
 └── server/                        # Node.js + Apollo Server v4 Backend
     └── src/
-        ├── index.ts               # Express app, SSE `/events` route, documentStore: null
+        ├── index.ts               # Express app, SSE `/events` route, dynamic CORS
         ├── schema/typeDefs.ts     # GraphQL SDL schema
-        ├── resolvers/index.ts     # Query & relational field resolvers
-        ├── db/database.ts         # SQLite init & auto-seeding with better-sqlite3
-        ├── plugins/tracingPlugin.ts # Custom Apollo plugin emitting SSE execution events
+        ├── resolvers/index.ts     # Async query, mutation & relational resolvers
+        ├── db/
+        │   ├── database.ts        # Hybrid SQLite / Supabase PostgreSQL adapter
+        │   └── seed_postgres.ts   # Cloud database schema migration & seed script
+        ├── plugins/tracingPlugin.ts # Apollo plugin emitting SSE execution events
         └── tracer.ts              # SSE client registry & event emitter helper
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🛠️ Tech Stack
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Frontend** | React + TypeScript + Vite | Component UI & dev server |
+| **3D Graphics** | Three.js | Procedural planets & rocket flight curve |
+| **Animations** | Framer Motion | Node transitions, field line enter/exit, button micro-animations |
+| **Styling** | Vanilla CSS | Cream Neobrutalism design system — bold 3px borders, offset shadows |
+| **Backend API** | Apollo Server v4 + Express | Real GraphQL execution server & SSE stream (port 4000) |
+| **Database** | Supabase (PostgreSQL) / SQLite | Hybrid cloud/local relational database |
+| **Live Tracing** | Server-Sent Events (SSE) | One-directional push stream from server to browser per execution step |
+
+---
+
+## ☁️ Distributed Cloud Deployment
+
+GraphScope supports a cloud architecture:
+
+```text
+ ┌─────────────────┐       GraphQL / SSE       ┌─────────────────┐
+ │   Vercel (UI)   │ ────────────────────────> │ Render / Railway│
+ │ React / Vite    │                           │ (Node + Apollo) │
+ └─────────────────┘                           └────────┬────────┘
+                                                        │ SQL Queries
+                                                        ▼
+                                               ┌─────────────────┐
+                                               │    Supabase     │
+                                               │   (Postgres)    │
+                                               └─────────────────┘
+```
+
+1. **Supabase**: Managed Cloud PostgreSQL Database (Seed with `DATABASE_URL="..." npm run seed:postgres`).
+2. **Render / Railway**: Node.js Apollo Server + SSE endpoint.
+3. **Vercel**: Static React frontend deployment.
+
+---
+
+## 🚀 Getting Started (Local Development)
 
 ### Prerequisites
 - **Node.js**: v18.0.0 or higher
 - **npm**: v9.0.0 or higher
 
-### 1. Clone the Repository
+### 1. Clone & Install
 ```bash
 git clone https://github.com/AyushPatil615/GraphQL.git
 cd GraphQL
-```
 
-### 2. Install Dependencies
-```bash
 # Install server dependencies
-cd server
-npm install
+cd server && npm install
 
 # Install client dependencies
-cd ../client
-npm install
+cd ../client && npm install
 ```
 
-### 3. Run the Development Servers
-
+### 2. Run Local Development
 Open **two terminal windows**:
 
-**Terminal 1 (Backend Server):**
+**Terminal 1 (Server):**
 ```bash
 cd server
 npm run dev
 ```
-*Backend will run on `http://localhost:4000` (GraphQL at `/graphql`, SSE stream at `/events`).*
 
-**Terminal 2 (Frontend Client):**
+**Terminal 2 (Client):**
 ```bash
 cd client
 npm run dev
 ```
-*Frontend will run on `http://localhost:5173`.*
 
-Open your browser and navigate to **http://localhost:5173**.
-
-> *The Vite dev server automatically proxies `/graphql` and `/events` to port 4000 — no CORS configuration required on the client.*
-
----
-
-## 🗄️ Database & Seed Data
-
-GraphScope includes an embedded SQLite database located at `server/data/graphscope.sqlite` (automatically created and seeded on first run). 
-
-The initial seed dataset includes:
-- **Alex Rivera** (Age 21) → Enrolled in *Intro to Computer Science* & *Web Development*
-- **Jordan Smith** (Age 22) → Enrolled in *Data Structures*
-- **Morgan Lee** (Age 20) → Enrolled in *Algorithms*
+Open your browser at **`http://localhost:5173`**.
 
 ---
 
 ## 🎨 Design System
 
-The UI uses **Cream Neobrutalism** — a modern design aesthetic built around:
-- Warm cream background (`#FFF8F0`) with a subtle dot grid
-- Bold 3px black borders on all cards
-- Offset box shadows (`5px 5px 0 #000`) for a tactile "printed on paper" feel
-- Saturated but warm accent colors (sky blue, lavender, coral, peach, mint)
-- Typography: `Nunito` (sans-serif UI) + `JetBrains Mono` (code & stats)
-
-Every pipeline step has its own assigned color that appears consistently across the pipeline nodes, timeline bars, step badges, and dialogue panel headers.
+The UI uses **Cream Neobrutalism**:
+- Warm cream background (`#FFF8F0`) with a dot grid.
+- Bold 3px black borders with offset box shadows (`5px 5px 0 #000`).
+- Saturated accent colors (sky blue, lavender, coral, mint).
+- Typography: `Nunito` (sans-serif UI) + `JetBrains Mono` (code & stats).
 
 ---
 

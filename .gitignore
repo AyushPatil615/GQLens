@@ -41,3 +41,5 @@ pnpm-debug.log*
 # ── Private planning docs ────────────────────────────────────
 GraphScope_v1_Build_Plan.md
 GraphScope_v2_Roadmap.md
+deployment_guide.md
+
