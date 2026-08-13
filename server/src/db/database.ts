@@ -110,6 +110,10 @@ seedAll();
 export interface StudentRow     { id: string; name: string; age: number }
 export interface CourseRow      { id: string; title: string; instructor: string }
 
+export interface CourseWithStudentId extends CourseRow {
+  student_id: string;
+}
+
 export const educationQueries = {
   getStudent: db.prepare<[string], StudentRow>(
     `SELECT * FROM students WHERE id = ?`
@@ -122,6 +126,18 @@ export const educationQueries = {
      JOIN enrollments e ON e.course_id = c.id
      WHERE e.student_id = ?`
   ),
+  /** Batched: get all courses for multiple student IDs in ONE query (DataLoader pattern) */
+  getBatchedCoursesForStudents(studentIds: string[]): CourseWithStudentId[] {
+    if (studentIds.length === 0) return [];
+    const placeholders = studentIds.map(() => '?').join(', ');
+    const stmt = db.prepare<string[], CourseWithStudentId>(
+      `SELECT c.*, e.student_id
+       FROM courses c
+       JOIN enrollments e ON e.course_id = c.id
+       WHERE e.student_id IN (${placeholders})`
+    );
+    return stmt.all(...studentIds);
+  },
 };
 
 // ─── Healthcare typed query helpers ──────────────────────────────────

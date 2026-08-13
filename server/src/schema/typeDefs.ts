@@ -9,6 +9,13 @@ export const typeDefs = gql`
     courses: [Course!]!
   }
 
+  """Student enriched with pre-loaded courses for N+1 demo"""
+  type StudentWithCourses {
+    id:      ID!
+    name:    String!
+    courses: [Course!]!
+  }
+
   type Course {
     id:         ID!
     title:      String!
@@ -77,6 +84,11 @@ export const typeDefs = gql`
 
     """Fetch all students"""
     students: [Student!]!
+
+    """N+1 Demo — fetch all students with their courses.
+    Pass useDataLoader: true to use batched loading (the fix),
+    or false (default) to trigger the N+1 problem."""
+    studentsWithCourses(useDataLoader: Boolean): [StudentWithCourses!]!
 
     """Fetch a single patient by ID (Healthcare domain)"""
     patient(id: ID!): Patient

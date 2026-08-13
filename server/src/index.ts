@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 4000;
 app.use(cors({
   origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'x-request-id', 'x-domain-id'],
+  allowedHeaders: ['Content-Type', 'x-request-id', 'x-domain-id', 'x-dataloader-enabled'],
 }));
 app.use(express.json());
 
@@ -72,7 +72,8 @@ async function start() {
     '/graphql',
     expressMiddleware(server, {
       context: async ({ req }) => ({
-        requestId: (req.headers['x-request-id'] as string) ?? '',
+        requestId:         (req.headers['x-request-id'] as string) ?? '',
+        dataLoaderEnabled: req.headers['x-dataloader-enabled'] === 'true',
       }),
     }),
   );

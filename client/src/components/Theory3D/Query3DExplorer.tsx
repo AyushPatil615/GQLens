@@ -380,6 +380,9 @@ export function Query3DExplorer() {
     let currentT = 0;
     let autoPilotDwellTimer = 0;
     const DWELL_PAUSE_FRAMES = 120;
+    // Change-detection guard — prevents calling setState every rAF frame
+    let lastFlightState: boolean | null = null;
+
 
     // ── Render Loop ──
     const render = () => {
@@ -400,6 +403,7 @@ export function Query3DExplorer() {
       particleMesh.rotation.y += 0.0003;
 
       // Flight Movement
+      // Guard: only call setState when value actually changes (avoids 60fps re-renders)
       if (autoPilotRef.current) {
         if (autoPilotDwellTimer > 0) {
           autoPilotDwellTimer--;
@@ -411,10 +415,10 @@ export function Query3DExplorer() {
           );
           rocketMesh.position.copy(dockedPos).add(orbitOffset);
           rocketMesh.rotation.y += 0.015;
-          setIsFlightInProgress(false);
+          if (lastFlightState !== false) { lastFlightState = false; setIsFlightInProgress(false); }
         } else {
-          setIsFlightInProgress(true);
-          currentT += 0.0006 * speedRef.current;
+          if (lastFlightState !== true) { lastFlightState = true; setIsFlightInProgress(true); }
+          currentT += 0.0006; // slow speed
           if (currentT > 1) currentT = 0;
 
           const flightPos = curve.getPointAt(currentT);
@@ -444,12 +448,12 @@ export function Query3DExplorer() {
         const dist = rocketMesh.position.distanceTo(targetPos);
 
         if (dist > 0.4) {
-          setIsFlightInProgress(true);
-          // Slow lerp speed: 0.015 * speedRef
-          rocketMesh.position.lerp(targetPos, 0.015 * speedRef.current);
+          if (lastFlightState !== true) { lastFlightState = true; setIsFlightInProgress(true); }
+          // Slow lerp speed for graceful flight
+          rocketMesh.position.lerp(targetPos, 0.015);
           rocketMesh.lookAt(targetPos);
         } else {
-          setIsFlightInProgress(false);
+          if (lastFlightState !== false) { lastFlightState = false; setIsFlightInProgress(false); }
           const orbitOffset = new THREE.Vector3(
             Math.sin(Date.now() * 0.003) * 0.3,
             Math.cos(Date.now() * 0.003) * 0.3,
@@ -460,12 +464,9 @@ export function Query3DExplorer() {
         }
       }
 
-      // Smooth Camera Tracking
-      const activePos = STAGE_STEPS[activeStepRef.current].pos;
-      const camTargetX = activePos[0] * 0.4 + mouseX * 2;
-      const camTargetY = 4 + mouseY * 1.5;
-
-      camera.position.x += (camTargetX - camera.position.x) * 0.04;
+      // Fixed camera — only subtle vertical tilt on mouse Y, no horizontal pan
+      const camTargetY = 4 + mouseY * 0.5;
+      camera.position.x += (0 - camera.position.x) * 0.06;
       camera.position.y += (camTargetY - camera.position.y) * 0.04;
       camera.lookAt(0, 0, 0);
 
@@ -616,68 +617,77 @@ export function Query3DExplorer() {
       />
 
       {/* ── Dynamic Explanation Card Overlay (Flicker-Free Inline Fade) ── */}
-      <AnimatePresence>
-        <motion.div
-          key={activeStep.id}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-          style={{
-            padding: '16px 20px',
-            background: '#0b0f19',
-            borderTop: '2px solid #1e293b',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: 16,
-            alignItems: 'center',
-          }}
-        >
-          {/* Explanation Text */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <div style={{
-                width: 10, height: 10, borderRadius: '50%',
-                background: activeStep.color,
-                boxShadow: `0 0 10px ${activeStep.color}`,
-              }} />
-              <h4 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#f8fafc' }}>
-                {activeStep.name}
-              </h4>
+      {/* FIXED HEIGHT — prevents page shift as code lengths differ between steps */}
+      <div style={{
+        minHeight: 168,
+        background: '#0b0f19',
+        borderTop: '2px solid #1e293b',
+        overflow: 'hidden',
+      }}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeStep.id}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.15 }}
+            style={{
+              padding: '16px 20px',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: 16,
+              alignItems: 'start',
+            }}
+          >
+            {/* Explanation Text */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <div style={{
+                  width: 10, height: 10, borderRadius: '50%',
+                  background: activeStep.color,
+                  boxShadow: `0 0 10px ${activeStep.color}`,
+                }} />
+                <h4 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#f8fafc' }}>
+                  {activeStep.name}
+                </h4>
+              </div>
+              <p style={{ margin: '0 0 6px', fontSize: 11.5, fontWeight: 700, color: activeStep.color }}>
+                {activeStep.sub}
+              </p>
+              <p style={{ margin: 0, fontSize: 12, color: '#94a3b8', lineHeight: 1.5 }}>
+                {activeStep.desc}
+              </p>
             </div>
-            <p style={{ margin: '0 0 6px', fontSize: 11.5, fontWeight: 700, color: activeStep.color }}>
-              {activeStep.sub}
-            </p>
-            <p style={{ margin: 0, fontSize: 12, color: '#94a3b8', lineHeight: 1.5 }}>
-              {activeStep.desc}
-            </p>
-          </div>
 
-          {/* Real Code Snippet Box */}
-          <div style={{
-            background: '#020617',
-            border: `1.5px solid ${activeStep.color}`,
-            borderRadius: 8,
-            padding: '10px 14px',
-            boxShadow: '3px 3px 0 #000',
-          }}>
-            <div style={{ fontSize: 9.5, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
-              Under the Hood Code
-            </div>
-            <pre style={{
-              margin: 0,
-              fontFamily: 'var(--font-mono)',
-              fontSize: 11,
-              lineHeight: 1.6,
-              color: '#e2e8f0',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
+            {/* Real Code Snippet Box — fixed height so page never shifts */}
+            <div style={{
+              background: '#020617',
+              border: `1.5px solid ${activeStep.color}`,
+              borderRadius: 8,
+              padding: '10px 14px',
+              boxShadow: '3px 3px 0 #000',
             }}>
-              {activeStep.code}
-            </pre>
-          </div>
-        </motion.div>
-      </AnimatePresence>
+              <div style={{ fontSize: 9.5, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+                Under the Hood Code
+              </div>
+              <pre style={{
+                margin: 0,
+                fontFamily: 'var(--font-mono)',
+                fontSize: 11,
+                lineHeight: 1.6,
+                color: '#e2e8f0',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                /* Fixed height = 9 lines × 1.6 line-height × 11px ≈ 130px — always same height */
+                height: 132,
+                overflow: 'auto',
+              }}>
+                {activeStep.code}
+              </pre>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
