@@ -9,7 +9,6 @@ import { MutationBuilder } from '../MutationDemo/MutationBuilder';
 import { DataDiffPanel } from '../MutationDemo/DataDiffPanel';
 import { PresetQueriesPanel } from './PresetQueriesPanel';
 import { Query3DExplorer } from '../Theory3D/Query3DExplorer';
-import { N1Visualizer } from '../N1Visualizer/N1Visualizer';
 import { DOMAIN_PRESETS } from '../../data/queryExamples';
 import type { DomainConfig } from '../../data/domains';
 import { buildDomainQuery } from '../../data/domains';
@@ -615,15 +614,6 @@ export function FakeDemo({ domain }: { domain: DomainConfig }) {
         position: 'relative', zIndex: 1,
       }}>
         <Query3DExplorer />
-      </div>
-
-      {/* ── N+1 Problem & DataLoader Visualizer ── */}
-      <div style={{
-        padding: '0 24px',
-        maxWidth: 1180, margin: '0 auto', width: '100%',
-        position: 'relative', zIndex: 1,
-      }}>
-        <N1Visualizer />
       </div>
 
       {/* ── Timeline ── */}

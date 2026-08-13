@@ -2,15 +2,17 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FakeDemo }        from './components/FakeDemo/FakeDemo';
 import { RestComparison }  from './components/RestVsGraphQL/RestComparison';
+import { GoingDeeper }     from './components/GoingDeeper/GoingDeeper';
 import { DOMAINS, getDomain } from './data/domains';
 import type { DomainId } from './data/domains';
 import './index.css';
 
-type Tab = 'rest' | 'graphql';
+type Tab = 'rest' | 'graphql' | 'deeper';
 
 const TAB_CONFIG: { id: Tab; emoji: string; label: string }[] = [
   { id: 'rest',    emoji: '😩', label: 'The Problem (REST)' },
   { id: 'graphql', emoji: '✨', label: 'The Solution (GraphQL)' },
+  { id: 'deeper',  emoji: '⚡', label: 'Going Deeper' },
 ];
 
 export default function App() {
@@ -137,7 +139,9 @@ export default function App() {
         >
           {tab === 'rest'
             ? <RestComparison onTryDemo={() => setTab('graphql')} />
-            : <FakeDemo domain={domain} />
+            : tab === 'graphql'
+              ? <FakeDemo domain={domain} />
+              : <GoingDeeper />
           }
         </motion.div>
       </AnimatePresence>
