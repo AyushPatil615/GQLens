@@ -88,7 +88,7 @@ async function start() {
         requestId:         (req.headers['x-request-id'] as string) ?? '',
         dataLoaderEnabled: req.headers['x-dataloader-enabled'] === 'true',
       }),
-    }) as unknown as express.RequestHandler,
+    }) as any,
   );
 
   app.listen(PORT, () => {
