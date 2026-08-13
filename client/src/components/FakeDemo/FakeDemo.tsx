@@ -131,7 +131,6 @@ export function FakeDemo({ domain }: { domain: DomainConfig }) {
   // ── Real backend hook ───────────────────────────────────────────────
   const { steps, isRunning, isComplete, isError, errorMsg, responseData, runQuery, reset: resetTrace } = useGraphQLTrace(query, domain.id);
 
-  const totalMs    = steps.reduce((s, e) => s + e.ms, 0);
   const activeStep = !isComplete && steps.length > 0 ? steps[steps.length - 1] : null;
   const caption    = isComplete ? COMPLETE_CAPTION : (activeStep?.caption ?? '');
 

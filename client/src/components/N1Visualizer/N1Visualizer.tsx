@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getApiBaseUrl } from '../../config/api';
 
 // ─── Types ─────────────────────────────────────────────────────────────
 interface DbQueryEvent {
@@ -67,17 +68,18 @@ export function N1Visualizer() {
     eventIndexRef.current = 0;
 
     const requestId = crypto.randomUUID();
+    const baseUrl = getApiBaseUrl();
 
     // Timeout watchdog
     timeoutRef.current = setTimeout(() => {
       esRef.current?.close();
       esRef.current = null;
       setPhase('error');
-      setErrorMsg('Server did not respond in time. Make sure the backend is running on port 4000.');
+      setErrorMsg('Server did not respond in time.');
     }, 10_000);
 
     // Open SSE connection
-    const es = new EventSource(`/events?requestId=${requestId}`);
+    const es = new EventSource(`${baseUrl}/events?requestId=${requestId}`);
     esRef.current = es;
 
     es.onmessage = (e) => {
@@ -116,7 +118,7 @@ export function N1Visualizer() {
     es.onerror = () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       setPhase('error');
-      setErrorMsg('Could not connect to the server. Is it running on port 4000?');
+      setErrorMsg('Could not connect to the server.');
       es.close();
     };
 
@@ -125,7 +127,7 @@ export function N1Visualizer() {
 
     // Fire the GraphQL query
     try {
-      const res = await fetch('/graphql', {
+      const res = await fetch(`${baseUrl}/graphql`, {
         method:  'POST',
         headers: {
           'Content-Type':         'application/json',

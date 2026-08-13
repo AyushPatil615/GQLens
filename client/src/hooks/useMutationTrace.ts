@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import type { EventStep } from './useGraphQLTrace';
+import { getApiBaseUrl } from '../config/api';
 
 // ─── Snapshot row types (mirror server return types) ─────────────────────────
 export interface EnrollmentSnapshot {
@@ -64,6 +65,7 @@ export function useMutationTrace(domainId = 'education') {
     mutationRef.current = mutationText;
 
     const requestId = crypto.randomUUID();
+    const baseUrl = getApiBaseUrl();
     setPhase('running');
     setSteps([]);
     setResult(null);
@@ -74,11 +76,11 @@ export function useMutationTrace(domainId = 'education') {
       esRef.current?.close();
       esRef.current = null;
       setPhase('error');
-      setErrorMsg('Server did not respond in time. Make sure the backend is running on port 4000.');
+      setErrorMsg('Server did not respond in time.');
     }, TIMEOUT_MS);
 
     // 1. Open SSE connection BEFORE sending the mutation
-    const es = new EventSource(`/events?requestId=${requestId}`);
+    const es = new EventSource(`${baseUrl}/events?requestId=${requestId}`);
     esRef.current = es;
 
     es.onmessage = (e) => {
@@ -109,9 +111,9 @@ export function useMutationTrace(domainId = 'education') {
 
     es.onerror = () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      console.warn('[GraphScope] SSE connection error (mutation)');
+      console.warn('[GraphScope] SSE connection error');
       setPhase('error');
-      setErrorMsg('Could not connect to the server. Is it running on port 4000?');
+      setErrorMsg('Could not connect to the server.');
       es.close();
     };
 
@@ -120,7 +122,7 @@ export function useMutationTrace(domainId = 'education') {
 
     // 2. Send the GraphQL mutation
     try {
-      const res = await fetch('/graphql', {
+      const res = await fetch(`${baseUrl}/graphql`, {
         method:  'POST',
         headers: {
           'Content-Type':  'application/json',

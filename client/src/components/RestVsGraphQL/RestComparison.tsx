@@ -161,7 +161,6 @@ export function RestComparison({ onTryDemo }: { onTryDemo: () => void }) {
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const isIdle       = animStep === 0;
-  const isAnimating  = animStep > 0 && animStep < 7;
   const isDone       = animStep >= 7;
 
   // Per-REST-call state

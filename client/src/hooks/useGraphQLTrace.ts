@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { getApiBaseUrl } from '../config/api';
 
 // ─── Types ────────────────────────────────────────────────────────────
 export interface EventStep {
@@ -57,8 +58,10 @@ export function useGraphQLTrace(query: string, domainId = 'education') {
       setErrorMsg('Server did not respond in time. Make sure the backend is running on port 4000.');
     }, TIMEOUT_MS);
 
+    const baseUrl = getApiBaseUrl();
+
     // 1. Open SSE connection BEFORE sending the query
-    const es = new EventSource(`/events?requestId=${requestId}`);
+    const es = new EventSource(`${baseUrl}/events?requestId=${requestId}`);
     esRef.current = es;
 
     es.onmessage = (e) => {
@@ -91,7 +94,7 @@ export function useGraphQLTrace(query: string, domainId = 'education') {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       console.warn('[GraphScope] SSE connection error');
       setPhase('error');
-      setErrorMsg('Could not connect to the server. Is it running on port 4000?');
+      setErrorMsg('Could not connect to the server.');
       es.close();
     };
 
@@ -100,7 +103,7 @@ export function useGraphQLTrace(query: string, domainId = 'education') {
 
     // 2. Send the actual GraphQL query and capture the response
     try {
-      const res = await fetch('/graphql', {
+      const res = await fetch(`${baseUrl}/graphql`, {
         method:  'POST',
         headers: {
           'Content-Type':  'application/json',
