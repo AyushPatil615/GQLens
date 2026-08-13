@@ -15,11 +15,24 @@ import './db/database';
 const app  = express();
 const PORT = process.env.PORT || 4000;
 
-// ─── CORS ────────────────────────────────────────────────────────────
+// ─── Dynamic CORS Configuration ──────────────────────────────────────
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  process.env.CLIENT_ORIGIN,
+].filter(Boolean) as string[];
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow for demo requests
+    }
+  },
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'x-request-id', 'x-domain-id', 'x-dataloader-enabled'],
+  credentials: true,
 }));
 app.use(express.json());
 
@@ -75,7 +88,7 @@ async function start() {
         requestId:         (req.headers['x-request-id'] as string) ?? '',
         dataLoaderEnabled: req.headers['x-dataloader-enabled'] === 'true',
       }),
-    }),
+    }) as unknown as express.RequestHandler,
   );
 
   app.listen(PORT, () => {

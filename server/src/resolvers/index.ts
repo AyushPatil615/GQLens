@@ -18,9 +18,9 @@ export interface AppContext {
 export const resolvers = {
   // ── Education queries ────────────────────────────────────────────
   Query: {
-    student(_: unknown, args: { id: string }, ctx: AppContext): StudentRow | undefined {
+    async student(_: unknown, args: { id: string }, ctx: AppContext): Promise<StudentRow | undefined> {
       const t = Date.now();
-      const row = educationQueries.getStudent.get(args.id);
+      const row = await educationQueries.getStudent(args.id);
       emitTrace(ctx.requestId, {
         step:    'db:query',
         ms:      Date.now() - t,
@@ -30,9 +30,9 @@ export const resolvers = {
       return row;
     },
 
-    students(_: unknown, __: unknown, ctx: AppContext): StudentRow[] {
+    async students(_: unknown, __: unknown, ctx: AppContext): Promise<StudentRow[]> {
       const t = Date.now();
-      const rows = educationQueries.getAllStudents.all();
+      const rows = await educationQueries.getAllStudents();
       emitTrace(ctx.requestId, {
         step:    'db:query',
         ms:      Date.now() - t,
@@ -43,7 +43,7 @@ export const resolvers = {
     },
 
     // ── N+1 Demo query ─────────────────────────────────────────────
-    studentsWithCourses(
+    async studentsWithCourses(
       _: unknown,
       args: { useDataLoader?: boolean },
       ctx: AppContext,
@@ -53,7 +53,7 @@ export const resolvers = {
 
       // Step 1 — always fetch all students first
       const t0 = Date.now();
-      const students = educationQueries.getAllStudents.all();
+      const students = await educationQueries.getAllStudents();
       emitTrace(ctx.requestId, {
         step:    'db:query:students',
         ms:      Date.now() - t0,
@@ -66,7 +66,7 @@ export const resolvers = {
         const studentIds = students.map(s => s.id);
         const t1 = Date.now();
         const allCourseRows: CourseWithStudentId[] =
-          educationQueries.getBatchedCoursesForStudents(studentIds);
+          await educationQueries.getBatchedCoursesForStudents(studentIds);
         emitTrace(ctx.requestId, {
           step:    'db:query:batched',
           ms:      Date.now() - t1,
@@ -88,24 +88,27 @@ export const resolvers = {
         }));
       } else {
         // ── N+1 path: one query PER student ─────────────────────────
-        return students.map((s, idx) => {
+        const result = [];
+        for (let idx = 0; idx < students.length; idx++) {
+          const s = students[idx];
           const t = Date.now();
-          const courses = educationQueries.getCoursesForStudent.all(s.id);
+          const courses = await educationQueries.getCoursesForStudent(s.id);
           emitTrace(ctx.requestId, {
             step:    `db:query:n1:${idx + 1}`,
             ms:      Date.now() - t,
             caption: `SELECT courses WHERE student_id = '${s.id}' (for "${s.name}")  →  ${courses.length} rows`,
             ts:      t,
           });
-          return { id: s.id, name: s.name, courses };
-        });
+          result.push({ id: s.id, name: s.name, courses });
+        }
+        return result;
       }
     },
 
     // ── Healthcare queries ─────────────────────────────────────────
-    patient(_: unknown, args: { id: string }, ctx: AppContext): PatientRow | undefined {
+    async patient(_: unknown, args: { id: string }, ctx: AppContext): Promise<PatientRow | undefined> {
       const t = Date.now();
-      const row = healthcareQueries.getPatient.get(args.id);
+      const row = await healthcareQueries.getPatient(args.id);
       emitTrace(ctx.requestId, {
         step:    'db:query',
         ms:      Date.now() - t,
@@ -115,9 +118,9 @@ export const resolvers = {
       return row;
     },
 
-    patients(_: unknown, __: unknown, ctx: AppContext): PatientRow[] {
+    async patients(_: unknown, __: unknown, ctx: AppContext): Promise<PatientRow[]> {
       const t = Date.now();
-      const rows = healthcareQueries.getAllPatients.all();
+      const rows = await healthcareQueries.getAllPatients();
       emitTrace(ctx.requestId, {
         step:    'db:query',
         ms:      Date.now() - t,
@@ -130,88 +133,88 @@ export const resolvers = {
 
   // ── Mutations ────────────────────────────────────────────────────
   Mutation: {
-    enrollStudent(
+    async enrollStudent(
       _: unknown,
       args: { studentId: string; courseId: string },
       ctx: AppContext,
     ) {
-      const before: EnrollmentSnapshot[] = educationMutations.getEnrollmentSnapshot.all(args.studentId);
+      const before: EnrollmentSnapshot[] = await educationMutations.getEnrollmentSnapshot(args.studentId);
       const t = Date.now();
-      educationMutations.enroll.run(args.studentId, args.courseId);
+      await educationMutations.enroll(args.studentId, args.courseId);
       emitTrace(ctx.requestId, {
         step:    'db:write',
         ms:      Date.now() - t,
         caption: `INSERT INTO enrollments (student_id, course_id) VALUES ('${args.studentId}', '${args.courseId}')`,
         ts:      t,
       });
-      const after: EnrollmentSnapshot[] = educationMutations.getEnrollmentSnapshot.all(args.studentId);
+      const after: EnrollmentSnapshot[] = await educationMutations.getEnrollmentSnapshot(args.studentId);
       return { success: true, message: 'Student enrolled successfully.', before, after };
     },
 
-    unenrollStudent(
+    async unenrollStudent(
       _: unknown,
       args: { studentId: string; courseId: string },
       ctx: AppContext,
     ) {
-      const before: EnrollmentSnapshot[] = educationMutations.getEnrollmentSnapshot.all(args.studentId);
+      const before: EnrollmentSnapshot[] = await educationMutations.getEnrollmentSnapshot(args.studentId);
       const t = Date.now();
-      educationMutations.unenroll.run(args.studentId, args.courseId);
+      await educationMutations.unenroll(args.studentId, args.courseId);
       emitTrace(ctx.requestId, {
         step:    'db:write',
         ms:      Date.now() - t,
         caption: `DELETE FROM enrollments WHERE student_id='${args.studentId}' AND course_id='${args.courseId}'`,
         ts:      t,
       });
-      const after: EnrollmentSnapshot[] = educationMutations.getEnrollmentSnapshot.all(args.studentId);
+      const after: EnrollmentSnapshot[] = await educationMutations.getEnrollmentSnapshot(args.studentId);
       return { success: true, message: 'Student unenrolled successfully.', before, after };
     },
 
-    scheduleAppointment(
+    async scheduleAppointment(
       _: unknown,
       args: { patientId: string; doctorId: string; date: string },
       ctx: AppContext,
     ) {
-      const before: AppointmentSnapshot[] = healthcareMutations.getAppointmentSnapshot.all(args.patientId);
+      const before: AppointmentSnapshot[] = await healthcareMutations.getAppointmentSnapshot(args.patientId);
       const t = Date.now();
-      healthcareMutations.scheduleAppointment.run(args.patientId, args.doctorId, args.date);
+      await healthcareMutations.scheduleAppointment(args.patientId, args.doctorId, args.date);
       emitTrace(ctx.requestId, {
         step:    'db:write',
         ms:      Date.now() - t,
         caption: `INSERT INTO appointments (patient_id='${args.patientId}', doctor_id='${args.doctorId}', date='${args.date}')`,
         ts:      t,
       });
-      const after: AppointmentSnapshot[] = healthcareMutations.getAppointmentSnapshot.all(args.patientId);
+      const after: AppointmentSnapshot[] = await healthcareMutations.getAppointmentSnapshot(args.patientId);
       return { success: true, message: 'Appointment scheduled successfully.', before, after };
     },
 
-    cancelAppointment(
+    async cancelAppointment(
       _: unknown,
       args: { appointmentId: string },
       ctx: AppContext,
     ) {
       // Need patient_id BEFORE deleting to fetch after-snapshot
-      const existing = healthcareMutations.getAppointmentPatientId.get(args.appointmentId);
+      const existing = await healthcareMutations.getAppointmentPatientId(args.appointmentId);
       if (!existing) return { success: false, message: 'Appointment not found.', before: [], after: [] };
 
-      const before: AppointmentSnapshot[] = healthcareMutations.getAppointmentSnapshot.all(existing.patient_id);
+      const before: AppointmentSnapshot[] = await healthcareMutations.getAppointmentSnapshot(existing.patient_id);
       const t = Date.now();
-      healthcareMutations.cancelAppointment.run(args.appointmentId);
+      await healthcareMutations.cancelAppointment(args.appointmentId);
       emitTrace(ctx.requestId, {
         step:    'db:write',
         ms:      Date.now() - t,
         caption: `DELETE FROM appointments WHERE id='${args.appointmentId}'`,
         ts:      t,
       });
-      const after: AppointmentSnapshot[] = healthcareMutations.getAppointmentSnapshot.all(existing.patient_id);
+      const after: AppointmentSnapshot[] = await healthcareMutations.getAppointmentSnapshot(existing.patient_id);
       return { success: true, message: 'Appointment cancelled.', before, after };
     },
   },
 
   // ── Education nested resolvers ───────────────────────────────────
   Student: {
-    courses(parent: StudentRow, _: unknown, ctx: AppContext): CourseRow[] {
+    async courses(parent: StudentRow, _: unknown, ctx: AppContext): Promise<CourseRow[]> {
       const t = Date.now();
-      const rows = educationQueries.getCoursesForStudent.all(parent.id);
+      const rows = await educationQueries.getCoursesForStudent(parent.id);
       emitTrace(ctx.requestId, {
         step:    'db:query',
         ms:      Date.now() - t,
@@ -224,9 +227,9 @@ export const resolvers = {
 
   // ── Healthcare nested resolvers ──────────────────────────────────
   Patient: {
-    appointments(parent: PatientRow, _: unknown, ctx: AppContext): AppointmentRow[] {
+    async appointments(parent: PatientRow, _: unknown, ctx: AppContext): Promise<AppointmentRow[]> {
       const t = Date.now();
-      const rows = healthcareQueries.getAppointmentsForPatient.all(parent.id);
+      const rows = await healthcareQueries.getAppointmentsForPatient(parent.id);
       emitTrace(ctx.requestId, {
         step:    'db:query',
         ms:      Date.now() - t,
@@ -238,8 +241,8 @@ export const resolvers = {
   },
 
   Appointment: {
-    doctor(parent: AppointmentRow): DoctorRow | undefined {
-      return healthcareQueries.getDoctor.get(parent.doctor_id);
+    async doctor(parent: AppointmentRow): Promise<DoctorRow | undefined> {
+      return healthcareQueries.getDoctor(parent.doctor_id);
     },
   },
 };

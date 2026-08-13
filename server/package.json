@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
-    "build": "tsc"
+    "build": "tsc",
+    "seed:postgres": "tsx src/db/seed_postgres.ts"
   },
   "keywords": [],
   "author": "",
@@ -18,13 +19,15 @@
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "graphql": "^16.14.2",
-    "graphql-tag": "^2.12.7"
+    "graphql-tag": "^2.12.7",
+    "pg": "^8.13.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.1.2",
+    "@types/pg": "^8.11.10",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "tsx": "^4.23.11",
