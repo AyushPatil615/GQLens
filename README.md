@@ -4,6 +4,12 @@
     <strong>An interactive, visual 3D GraphQL learning platform that streams real execution traces from Apollo Server + PostgreSQL/SQLite.</strong>
   </p>
   <p align="center">
+    <a href="https://graph-ql-omega.vercel.app">
+      <img src="https://img.shields.io/badge/%F0%9F%9A%80_Live_Demo-graph--ql--omega.vercel.app-10B981?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo">
+    </a>
+  </p>
+  <p align="center">
+    <a href="https://graph-ql-omega.vercel.app">🌐 Try Live App</a> •
     <a href="#-what-is-graphscope">What is GraphScope</a> •
     <a href="#-the-learning-problem-it-solves">Problem It Solves</a> •
     <a href="#-the-3-act-student-journey">3-Act Journey</a> •
@@ -12,7 +18,6 @@
     <a href="#%EF%B8%8F-architecture--how-it-works">Architecture</a> •
     <a href="#-getting-started">Getting Started</a> •
     <a href="#-distributed-cloud-deployment">Cloud Deployment</a> •
-    <a href="#-design-system">Design System</a> •
     <a href="#-license">License</a>
   </p>
 </p>
