@@ -3,17 +3,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FakeDemo }        from './components/FakeDemo/FakeDemo';
 import { RestComparison }  from './components/RestVsGraphQL/RestComparison';
 import { GoingDeeper }     from './components/GoingDeeper/GoingDeeper';
+import { ChallengesView }   from './components/Challenges/ChallengesView';
 import { DOMAINS, getDomain } from './data/domains';
 import type { DomainId } from './data/domains';
 import './index.css';
 
-type Tab = 'rest' | 'graphql' | 'deeper';
+type Tab = 'rest' | 'graphql' | 'deeper' | 'challenges';
 
 const TAB_CONFIG: { id: Tab; emoji: string; label: string }[] = [
-  { id: 'rest',    emoji: '😩', label: 'The Problem (REST)' },
-  { id: 'graphql', emoji: '✨', label: 'The Solution (GraphQL)' },
-  { id: 'deeper',  emoji: '⚡', label: 'Going Deeper' },
+  { id: 'rest',       emoji: '😩', label: 'The Problem (REST)' },
+  { id: 'graphql',    emoji: '✨', label: 'The Solution (GraphQL)' },
+  { id: 'deeper',     emoji: '⚡', label: 'Going Deeper' },
+  { id: 'challenges', emoji: '🎯', label: 'Challenges' },
 ];
+
 
 export default function App() {
   const [tab, setTab]         = useState<Tab>('rest');
@@ -141,7 +144,9 @@ export default function App() {
             ? <RestComparison onTryDemo={() => setTab('graphql')} />
             : tab === 'graphql'
               ? <FakeDemo domain={domain} />
-              : <GoingDeeper />
+              : tab === 'deeper'
+                ? <GoingDeeper />
+                : <ChallengesView />
           }
         </motion.div>
       </AnimatePresence>

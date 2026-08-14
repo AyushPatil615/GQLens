@@ -78,10 +78,12 @@ function toTreeNode(node: ASTNode, depth: number): TreeNode | null {
 
   // Recurse over child fields
   const children: TreeNode[] = [];
-  const n = node as Record<string, unknown>;
+  const n = node as unknown as Record<string, unknown>;
 
-  const childOrder = ['selectionSet', 'selections', 'arguments', 'variableDefinitions',
+
+  const childOrder = ['definitions', 'selectionSet', 'selections', 'arguments', 'variableDefinitions',
                       'directives', 'type', 'defaultValue', 'value'];
+
 
   for (const key of childOrder) {
     const val = n[key];

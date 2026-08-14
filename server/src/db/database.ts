@@ -1,3 +1,8 @@
+import dns from 'dns';
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
+
 import Database from 'better-sqlite3';
 import { Pool } from 'pg';
 import path from 'path';
@@ -37,6 +42,13 @@ if (isPg) {
   pgPool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 10000,
+    idleTimeoutMillis: 30000,
+    max: 10,
+  });
+
+  pgPool.on('error', (err) => {
+    console.error('⚠️ Unexpected PostgreSQL client error:', err.message);
   });
 } else {
   const DATA_DIR = path.join(__dirname, '../../data');

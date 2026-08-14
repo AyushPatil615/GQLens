@@ -30,7 +30,7 @@ export interface MutationResult {
 
 type Phase = 'idle' | 'running' | 'complete' | 'error';
 
-const TIMEOUT_MS = 10_000;
+const TIMEOUT_MS = 30_000; // 30s to allow for Render free tier wakeups
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 export function useMutationTrace(domainId = 'education') {

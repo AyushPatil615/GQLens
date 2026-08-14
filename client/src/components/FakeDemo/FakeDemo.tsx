@@ -9,10 +9,12 @@ import { MutationBuilder } from '../MutationDemo/MutationBuilder';
 import { DataDiffPanel } from '../MutationDemo/DataDiffPanel';
 import { PresetQueriesPanel } from './PresetQueriesPanel';
 import { Query3DExplorer } from '../Theory3D/Query3DExplorer';
+import { ASTExplorer } from '../ASTExplorer/ASTExplorer';
 import { DOMAIN_PRESETS } from '../../data/queryExamples';
 import type { DomainConfig } from '../../data/domains';
 import { buildDomainQuery } from '../../data/domains';
 import type { MutationOperationConfig } from '../../data/mutations';
+
 
 // FLOATERS and COMPLETE_CAPTION stay the same
 const FLOATERS = [
@@ -79,6 +81,9 @@ export function FakeDemo({ domain }: { domain: DomainConfig }) {
   const [activeMutOp, setActiveMutOp] = useState<MutationOperationConfig | null>(
     domain.mutations[0] ?? null
   );
+
+  // Active lower visualizer view ('3d' solar system vs 'ast' explorer)
+  const [lowerView, setLowerView] = useState<'3d' | 'ast'>('3d');
 
   // Build initial active-field map from the domain config
   const makeDefaultFields = (d: DomainConfig) =>
@@ -606,14 +611,78 @@ export function FakeDemo({ domain }: { domain: DomainConfig }) {
         )}
       </div>
 
-      {/* ── 3D Rocket Query Hop Traversal Visualizer ── */}
+      {/* ── Visualizer Sub-View Switcher (3D Space vs AST Explorer) ── */}
+      <div style={{
+        padding: '0 24px',
+        maxWidth: 1180, margin: '0 auto 12px', width: '100%',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        position: 'relative', zIndex: 1,
+      }}>
+        <div style={{
+          display: 'inline-flex',
+          background: '#fff',
+          border: '2px solid #000',
+          boxShadow: '3px 3px 0 #000',
+          borderRadius: 10,
+          padding: 3,
+          gap: 4,
+        }}>
+          <motion.button
+            onClick={() => setLowerView('3d')}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              padding: '6px 14px',
+              borderRadius: 7,
+              border: 'none',
+              background: lowerView === '3d' ? '#000' : 'transparent',
+              color: lowerView === '3d' ? '#fff' : '#4b5563',
+              fontSize: 12, fontWeight: 800,
+              fontFamily: 'var(--font-sans)',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            <span>🪐</span> 3D Solar System Traversal
+          </motion.button>
+
+          <motion.button
+            onClick={() => setLowerView('ast')}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              padding: '6px 14px',
+              borderRadius: 7,
+              border: 'none',
+              background: lowerView === 'ast' ? '#000' : 'transparent',
+              color: lowerView === 'ast' ? '#fff' : '#4b5563',
+              fontSize: 12, fontWeight: 800,
+              fontFamily: 'var(--font-sans)',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            <span>🌲</span> Interactive AST Explorer
+          </motion.button>
+        </div>
+
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-grey)', fontFamily: 'var(--font-sans)' }}>
+          {lowerView === '3d' ? '🚀 Real-time procedural 3D flight trajectory' : '🔍 Live Abstract Syntax Tree breakdown'}
+        </span>
+      </div>
+
+      {/* ── Active Visualizer (3D Solar System OR AST Explorer) ── */}
       <div style={{
         padding: '0 24px',
         maxWidth: 1180, margin: '0 auto', width: '100%',
         position: 'relative', zIndex: 1,
       }}>
-        <Query3DExplorer />
+        {lowerView === '3d' ? (
+          <Query3DExplorer />
+        ) : (
+          <ASTExplorer query={mode === 'mutation' && activeMutOp ? activeMutOp.buildMutation(Object.fromEntries(activeMutOp.args.map(a => [a.key, a.options[0]?.value ?? '']))) : editedQueryText} />
+        )}
+
       </div>
+
 
       {/* ── Timeline ── */}
       <div style={{

@@ -1,3 +1,9 @@
+import dns from 'dns';
+// Force IPv4 DNS resolution for cloud platforms (Render/Railway/Supabase IPv4 pooler)
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
+
 import express from 'express';
 import cors from 'cors';
 import { ApolloServer } from '@apollo/server';
@@ -11,6 +17,7 @@ import type { AppContext } from './resolvers/index';
 
 // ─── Initialise DB (side effect — creates tables + seeds data) ───────
 import './db/database';
+
 
 const app  = express();
 const PORT = process.env.PORT || 4000;

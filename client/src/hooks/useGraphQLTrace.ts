@@ -10,7 +10,7 @@ export interface EventStep {
 
 type Phase = 'idle' | 'running' | 'complete' | 'error';
 
-const TIMEOUT_MS = 10_000; // 10 s — if server never responds, show error
+const TIMEOUT_MS = 30_000; // 30s — allows for Render cloud backend wakeups
 
 // ─── Hook ─────────────────────────────────────────────────────────────
 export function useGraphQLTrace(query: string, domainId = 'education') {
