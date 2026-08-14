@@ -12,6 +12,7 @@
   "dependencies": {
     "@types/three": "^0.185.4",
     "framer-motion": "^13.0.0",
+    "graphql": "^17.0.2",
     "prism-react-renderer": "^2.4.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
