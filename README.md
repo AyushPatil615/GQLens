@@ -76,9 +76,9 @@ GraphScope makes the abstract concrete:
  (N+1 Problem & DataLoader)      (Active Quizzes & Scenarios)
 ```
 
-1. **🍊 Act 1 — The Problem (REST)**: Interactive restaurant metaphor & real network waterfall demonstrating why REST APIs struggle with relational data, overfetching, and underfetching.
+1. **😩 Act 1 — The Problem (REST)**: Interactive restaurant metaphor & real network waterfall demonstrating why REST APIs struggle with relational data, overfetching, and underfetching.
 2. **✨ Act 2 — The Solution (GraphQL)**: Live Query Builder, Mutation Editor, and procedural **3D Solar System Traversal** paired with the **Interactive AST Explorer**.
-3. **⚡ Act 3 — Going Deeper**: Interactive **N+1 Problem & DataLoader Visualizer**. Demonstrates the #1 GraphQL performance pitfall live by streaming real database queries in real-time.
+3. **⚡ Act 3 — Going Deeper**: Three advanced visualizers — **N+1 Problem & DataLoader**, **Null Bubbling & `completeValue()`**, and **Auth & Context Flow**. Each streams real server events.
 4. **🎯 Act 4 — Interactive Challenges**: 6 scenario-based quizzes that test learners on query multipliers, execution lifecycle order, null bubbling, and field collection directives.
 
 ---
@@ -205,9 +205,46 @@ Six nodes that light up as the server processes the query:
 
 ---
 
-### Tab 3 — ⚡ Going Deeper (N+1 & DataLoader)
+### Tab 3 — ⚡ Going Deeper
+
+#### 1. N+1 Problem & DataLoader Visualizer
 - Demonstrates how nested queries trigger $1 + N$ database queries when unbatched.
 - Live database query streamer showing separate queries in red vs 1 batched `WHERE IN (...)` query in green when DataLoader is toggled ON.
+
+#### 2. 🕳️ Null Bubbling & Partial Failure (`completeValue()`)
+One of the hardest concepts in GraphQL — what happens when a resolver fails:
+
+```text
+Nullable field (Int)  → age resolver throws → age: null ← null STAYS HERE
+                                               name, courses still resolve ✅
+
+Non-Null field (Int!) → age resolver throws → age CANNOT be null
+                                               null BUBBLES UP to student
+                                               student: null (siblings discarded) ❌
+```
+
+- **Schema Toggle**: Switch between `age: Int` (nullable) and `age: Int!` (non-null) to see the difference.
+- **💥 Trigger Failure Button**: Makes the `age` resolver throw a real error on the server.
+- **Propagation Tree**: Animates which nodes turn red (bubbled) or grey (discarded).
+- **Side-by-side JSON Diff**: Shows live `data` + `errors[]` response from the actual server.
+- **Explanation Panel**: Plain-English breakdown of what `completeValue()` did and why.
+
+#### 3. 🔐 Auth & Context Flow
+Teaches how `Authorization: Bearer <token>` headers flow through GraphQL's context system:
+
+```text
+HTTP Request                     context() fn                    Resolver
+────────────────────────────► ──────────────────────────────► ─────────────────
+Authorization: Bearer eyJ... → verifyToken(token) → ctx.user  resolver(_, _, ctx)
+                                                              if (!ctx.user) throw
+```
+
+- **Login Simulation**: Pick from 3 demo users (`alice/ADMIN`, `bob/VIEWER`, `charlie/VIEWER`).
+- **JWT Token Issuance**: Server issues a realistic `header.payload.signature` JWT using Node's built-in `crypto`.
+- **Animated Flow Diagram**: Watch HTTP Request → context() fn → ctx.user → Response light up step by step.
+- **Code Snippet Panel**: See the actual server code at each stage (`index.ts`, `resolvers/index.ts`).
+- **Live `me` Query**: Test the protected query with and without a token and see the real GraphQL response.
+- **Resolver Signature Reference**: Shows all 4 resolver args (`parent`, `args`, `context`, `info`) explained.
 
 ---
 
@@ -306,6 +343,8 @@ graphql_learner/
 │       │   ├── Challenges/        # Interactive scenario-based quizzes
 │       │   ├── Theory3D/          # Three.js 3D Solar System traversal
 │       │   ├── N1Visualizer/      # N+1 & DataLoader query streamer
+│       │   ├── NullBubble/        # Null Bubbling & completeValue() visualizer
+│       │   ├── AuthFlow/          # Auth & Context Flow interactive demo
 │       │   ├── MutationDemo/      # Mutation editor & SQL diff panel
 │       │   ├── PipelineVisualizer/# Animated 6-step node visualizer
 │       │   └── ExecutionTimeline/ # Horizontal timeline & Step Debugger toolbar
@@ -314,9 +353,10 @@ graphql_learner/
 │
 └── server/                        # Node.js + Apollo Server v4 Backend
     └── src/
-        ├── index.ts               # Express app, SSE route, IPv4 DNS & Apollo middleware
-        ├── schema/typeDefs.ts     # GraphQL SDL schema
-        ├── resolvers/index.ts     # Async query, mutation & relational resolvers
+        ├── index.ts               # Express app, SSE route, IPv4 DNS, Auth context & Apollo middleware
+        ├── schema/typeDefs.ts     # GraphQL SDL schema (Education, Healthcare, Auth, Null Demo)
+        ├── resolvers/index.ts     # Async query, mutation, auth & relational resolvers
+        ├── auth/jwt.ts            # Zero-dependency fake JWT for the auth learning demo
         ├── db/
         │   ├── database.ts        # Hybrid SQLite / Supabase PostgreSQL adapter
         │   └── seed_postgres.ts   # Cloud database schema migration & seed script
