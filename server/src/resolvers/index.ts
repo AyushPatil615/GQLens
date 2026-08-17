@@ -7,17 +7,46 @@ import type {
   EnrollmentSnapshot, AppointmentSnapshot, CourseWithStudentId,
 } from '../db/database';
 import { emitTrace } from '../tracer';
+import { issueToken } from '../auth/jwt';
 
 // ─── Context type ────────────────────────────────────────────────────
+export interface AuthUser {
+  id:   string;
+  name: string;
+  role: 'ADMIN' | 'VIEWER';
+}
+
 export interface AppContext {
   requestId: string;
   dataLoaderEnabled: boolean;
+  user: AuthUser | null; // null = unauthenticated
 }
+
+// ─── Demo users (hardcoded for the auth learning demo) ───────────────
+const DEMO_USERS: Record<string, { id: string; name: string; role: 'ADMIN' | 'VIEWER'; password: string }> = {
+  alice:   { id: 'u1', name: 'Alice (Admin)',  role: 'ADMIN',  password: 'admin123' },
+  bob:     { id: 'u2', name: 'Bob (Viewer)',   role: 'VIEWER', password: 'view123'  },
+  charlie: { id: 'u3', name: 'Charlie (Guest)',role: 'VIEWER', password: 'guest123' },
+};
 
 // ─── Resolvers ───────────────────────────────────────────────────────
 export const resolvers = {
   // ── Education queries ────────────────────────────────────────────
   Query: {
+    // ── Auth demo: me query ─────────────────────────────────────────
+    async me(_: unknown, __: unknown, ctx: AppContext) {
+      emitTrace(ctx.requestId, {
+        step:    'auth:context:read',
+        ms:      0,
+        caption: ctx.user
+          ? `✅ context.user = { id: "${ctx.user.id}", name: "${ctx.user.name}", role: "${ctx.user.role}" } — resolved from Authorization header.`
+          : '❌ context.user = null — no valid Authorization: Bearer token found in request headers.',
+        ts:      Date.now(),
+      });
+      if (!ctx.user) throw new Error('Unauthenticated: provide an Authorization: Bearer <token> header.');
+      return ctx.user;
+    },
+
     async student(_: unknown, args: { id: string }, ctx: AppContext): Promise<StudentRow | undefined> {
       const t = Date.now();
       const row = await educationQueries.getStudent(args.id);
@@ -170,6 +199,34 @@ export const resolvers = {
 
   // ── Mutations ────────────────────────────────────────────────────
   Mutation: {
+    // ── Auth demo: login mutation ────────────────────────────────
+    async login(
+      _: unknown,
+      args: { username: string; password: string },
+      ctx: AppContext,
+    ) {
+      const user = DEMO_USERS[args.username.toLowerCase()];
+      emitTrace(ctx.requestId, {
+        step:    'auth:login',
+        ms:      0,
+        caption: user && user.password === args.password
+          ? `✅ Login successful for "${args.username}" — issuing JWT token with role="${user.role}".`
+          : `❌ Login failed for "${args.username}" — invalid credentials.`,
+        ts:      Date.now(),
+      });
+      if (!user || user.password !== args.password) {
+        throw new Error(`Invalid credentials for user "${args.username}".`);
+      }
+      const token = await issueToken({ userId: user.id, name: user.name, role: user.role });
+      emitTrace(ctx.requestId, {
+        step:    'auth:token:issued',
+        ms:      0,
+        caption: `🔑 Token issued. Client should send: Authorization: Bearer ${token.slice(0, 40)}...`,
+        ts:      Date.now(),
+      });
+      return { token, user: { id: user.id, name: user.name, role: user.role } };
+    },
+
     async enrollStudent(
       _: unknown,
       args: { studentId: string; courseId: string },

@@ -13,6 +13,7 @@ import { typeDefs }           from './schema/typeDefs';
 import { resolvers }          from './resolvers/index';
 import { createTracingPlugin } from './plugins/tracingPlugin';
 import { registerClient, removeClient } from './tracer';
+import { verifyToken }        from './auth/jwt';
 import type { AppContext } from './resolvers/index';
 
 // ─── Initialise DB (side effect — creates tables + seeds data) ───────
@@ -38,7 +39,7 @@ app.use(cors({
     }
   },
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'x-request-id', 'x-domain-id', 'x-dataloader-enabled'],
+  allowedHeaders: ['Content-Type', 'x-request-id', 'x-domain-id', 'x-dataloader-enabled', 'Authorization'],
   credentials: true,
 }));
 app.use(express.json());
@@ -91,10 +92,23 @@ async function start() {
   app.use(
     '/graphql',
     expressMiddleware(server, {
-      context: async ({ req }) => ({
-        requestId:         (req.headers['x-request-id'] as string) ?? '',
-        dataLoaderEnabled: req.headers['x-dataloader-enabled'] === 'true',
-      }),
+      context: async ({ req }) => {
+        const requestId         = (req.headers['x-request-id'] as string) ?? '';
+        const dataLoaderEnabled = req.headers['x-dataloader-enabled'] === 'true';
+
+        // ── Auth context: parse Authorization: Bearer <token> ────────
+        let user: AppContext['user'] = null;
+        const authHeader = req.headers['authorization'] ?? '';
+        if (authHeader.startsWith('Bearer ')) {
+          const token   = authHeader.slice(7).trim();
+          const payload = await verifyToken(token);
+          if (payload) {
+            user = { id: payload.userId, name: payload.name, role: payload.role };
+          }
+        }
+
+        return { requestId, dataLoaderEnabled, user };
+      },
     }) as any,
   );
 

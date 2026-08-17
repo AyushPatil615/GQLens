@@ -77,6 +77,21 @@ export const typeDefs = gql`
     after:   [AppointmentRow!]!
   }
 
+  # ─── Auth & Context Flow Demo ────────────────────────────────────
+
+  """The authenticated user injected into GraphQL context via the Authorization header."""
+  type AuthUser {
+    id:   ID!
+    name: String!
+    role: String!
+  }
+
+  """Returned by the login mutation — contains the JWT token and user info."""
+  type LoginPayload {
+    token: String!
+    user:  AuthUser!
+  }
+
   # ─── Null Bubbling Demo ───────────────────────────────────────────
 
   """Student used for the null propagation demo.
@@ -114,6 +129,10 @@ export const typeDefs = gql`
 
   # ─── Combined Query ───────────────────────────────────────────────
   type Query {
+    """Auth Demo — returns the currently logged-in user from context.
+    Requires Authorization: Bearer <token> header. Throws if unauthenticated."""
+    me: AuthUser
+
     """Fetch a single student by ID (Education domain)"""
     student(id: ID!): Student
 
@@ -155,5 +174,9 @@ export const typeDefs = gql`
 
     """Cancel an existing appointment (Healthcare domain)"""
     cancelAppointment(appointmentId: ID!): AppointmentMutationPayload!
+
+    """Auth Demo — simulate user login. Returns a JWT token + user info.
+    Demo credentials: alice/admin123, bob/view123, charlie/guest123"""
+    login(username: String!, password: String!): LoginPayload!
   }
 `;
