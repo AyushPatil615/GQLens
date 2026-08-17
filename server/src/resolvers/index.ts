@@ -129,7 +129,44 @@ export const resolvers = {
       });
       return rows;
     },
+
+    // ── Null Propagation Demo resolvers ─────────────────────────────
+    async studentNullable(
+      _: unknown,
+      args: { id: string; failAge?: boolean },
+      ctx: AppContext,
+    ) {
+      const t = Date.now();
+      const row = await educationQueries.getStudent(args.id);
+      emitTrace(ctx.requestId, {
+        step:    'db:query',
+        ms:      Date.now() - t,
+        caption: `[Null Demo] Looking up student id="${args.id}" — age field is nullable (Int).`,
+        ts:      t,
+      });
+      if (!row) return null;
+      // Return parent object; age resolver will run separately
+      return { ...row, _failAge: args.failAge ?? false };
+    },
+
+    async studentNonNull(
+      _: unknown,
+      args: { id: string; failAge?: boolean },
+      ctx: AppContext,
+    ) {
+      const t = Date.now();
+      const row = await educationQueries.getStudent(args.id);
+      emitTrace(ctx.requestId, {
+        step:    'db:query',
+        ms:      Date.now() - t,
+        caption: `[Null Demo] Looking up student id="${args.id}" — age field is NON-NULL (Int!).`,
+        ts:      t,
+      });
+      if (!row) return null;
+      return { ...row, _failAge: args.failAge ?? false };
+    },
   },
+
 
   // ── Mutations ────────────────────────────────────────────────────
   Mutation: {
@@ -245,4 +282,74 @@ export const resolvers = {
       return healthcareQueries.getDoctor(parent.doctor_id);
     },
   },
+
+  // ── Null Propagation Demo — field-level resolvers ─────────────────
+  // These are deliberately separate types so the schema can be Int vs Int!
+  // The _failAge flag is threaded from the parent query resolver.
+
+  StudentNullable: {
+    async age(parent: StudentRow & { _failAge?: boolean }, _: unknown, ctx: AppContext): Promise<number | null> {
+      if (parent._failAge) {
+        emitTrace(ctx.requestId, {
+          step:    'null:bubble:nullable',
+          ms:      0,
+          caption: '💥 age resolver threw an error! Because age is Int (nullable), GraphQL returns age: null and keeps all sibling fields.',
+          ts:      Date.now(),
+        });
+        // Returning null is safe for Int (nullable)
+        return null;
+      }
+      emitTrace(ctx.requestId, {
+        step:    'resolve:age:ok',
+        ms:      0,
+        caption: `age resolver returned ${parent.age} successfully.`,
+        ts:      Date.now(),
+      });
+      return parent.age;
+    },
+    async courses(parent: StudentRow, _: unknown, ctx: AppContext): Promise<CourseRow[]> {
+      const t = Date.now();
+      const rows = await educationQueries.getCoursesForStudent(parent.id);
+      emitTrace(ctx.requestId, {
+        step:    'db:query',
+        ms:      Date.now() - t,
+        caption: `[Null Demo] Courses resolved normally for "${parent.name}" — siblings are unaffected.`,
+        ts:      t,
+      });
+      return rows;
+    },
+  },
+
+  StudentNonNull: {
+    async age(parent: StudentRow & { _failAge?: boolean }, _: unknown, ctx: AppContext): Promise<number> {
+      if (parent._failAge) {
+        emitTrace(ctx.requestId, {
+          step:    'null:bubble:nonnull',
+          ms:      0,
+          caption: '💥 age resolver threw! Because age is Int! (non-null), null BUBBLES UP — completeValue() makes the entire student null. Sibling fields are discarded.',
+          ts:      Date.now(),
+        });
+        throw new Error('Simulated age resolver failure — demonstrates non-null bubbling (completeValue)');
+      }
+      emitTrace(ctx.requestId, {
+        step:    'resolve:age:ok',
+        ms:      0,
+        caption: `age resolver returned ${parent.age} successfully.`,
+        ts:      Date.now(),
+      });
+      return parent.age;
+    },
+    async courses(parent: StudentRow, _: unknown, ctx: AppContext): Promise<CourseRow[]> {
+      const t = Date.now();
+      const rows = await educationQueries.getCoursesForStudent(parent.id);
+      emitTrace(ctx.requestId, {
+        step:    'db:query',
+        ms:      Date.now() - t,
+        caption: `[Null Demo] Courses resolver ran, but because age! failed, completeValue() discards this data too.`,
+        ts:      t,
+      });
+      return rows;
+    },
+  },
 };
+

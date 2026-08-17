@@ -77,6 +77,41 @@ export const typeDefs = gql`
     after:   [AppointmentRow!]!
   }
 
+  # ─── Null Bubbling Demo ───────────────────────────────────────────
+
+  """Student used for the null propagation demo.
+  The age field exists in two flavors: nullable (Int) and non-null (Int!).
+  We use two separate demo types so a single query can show both side-by-side."""
+  type StudentNullable {
+    id:      ID!
+    name:    String!
+    """Nullable age — if the resolver fails, null stays HERE and siblings survive"""
+    age:     Int
+    courses: [Course!]!
+  }
+
+  type StudentNonNull {
+    id:      ID!
+    name:    String!
+    """Non-null age — if the resolver fails, null BUBBLES UP to the parent object"""
+    age:     Int!
+    courses: [Course!]!
+  }
+
+  """Result wrapper showing nullable behavior"""
+  type NullableResult {
+    student: StudentNullable
+    scenario: String!
+    expectation: String!
+  }
+
+  """Result wrapper showing non-null bubbling behavior"""
+  type NonNullResult {
+    student: StudentNonNull
+    scenario: String!
+    expectation: String!
+  }
+
   # ─── Combined Query ───────────────────────────────────────────────
   type Query {
     """Fetch a single student by ID (Education domain)"""
@@ -95,6 +130,16 @@ export const typeDefs = gql`
 
     """Fetch all patients"""
     patients: [Patient!]!
+
+    """Null Propagation Demo — nullable age field.
+    When failAge=true the age resolver throws.
+    Because age is Int (nullable), null stays put and name/courses still resolve."""
+    studentNullable(id: ID!, failAge: Boolean): StudentNullable
+
+    """Null Propagation Demo — non-null age field.
+    When failAge=true the age resolver throws.
+    Because age is Int! (non-null), null bubbles up making the entire student null."""
+    studentNonNull(id: ID!, failAge: Boolean): StudentNonNull
   }
 
   # ─── Mutations ────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { N1Visualizer } from '../N1Visualizer/N1Visualizer';
+import { NullBubbleDemo } from '../NullBubble/NullBubbleDemo';
 
 const FLOATERS = [
   { char: '⚡', color: '#C4B5FD', top: '10%',   left: '2%',   size: 26 },
@@ -120,8 +121,11 @@ export function GoingDeeper() {
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 10, fontWeight: 900,
           }}>1</span>
+          <span style={{ background: '#000', color: '#fff', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900 }}>1</span>
           N+1 Problem &amp; DataLoader
-          <span style={{ color: '#9ca3af', fontWeight: 500 }}>— more coming soon</span>
+          <span style={{ margin: '0 4px', color: '#9CA3AF' }}>→</span>
+          <span style={{ background: '#000', color: '#fff', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900 }}>2</span>
+          Null Bubbling &amp; completeValue()
         </motion.div>
       </div>
 
@@ -130,8 +134,46 @@ export function GoingDeeper() {
         padding: '0 24px 52px',
         maxWidth: 1180, margin: '0 auto', width: '100%',
         position: 'relative', zIndex: 1,
+        display: 'flex', flexDirection: 'column', gap: 48,
       }}>
-        <N1Visualizer />
+        {/* Section 1: N+1 & DataLoader */}
+        <div>
+          <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{
+              background: '#000', color: '#fff', borderRadius: '50%',
+              width: 26, height: 26, display: 'inline-flex',
+              alignItems: 'center', justifyContent: 'center',
+              fontSize: 12, fontWeight: 900, flexShrink: 0,
+            }}>1</span>
+            <h2 style={{ fontSize: 18, fontWeight: 900, color: '#000', margin: 0 }}>
+              The N+1 Problem &amp; DataLoader
+            </h2>
+          </div>
+          <N1Visualizer />
+        </div>
+
+        {/* Divider */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#9CA3AF', whiteSpace: 'nowrap' }}>⚡ Going Deeper</span>
+          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
+        </div>
+
+        {/* Section 2: Null Bubbling */}
+        <div>
+          <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{
+              background: '#000', color: '#fff', borderRadius: '50%',
+              width: 26, height: 26, display: 'inline-flex',
+              alignItems: 'center', justifyContent: 'center',
+              fontSize: 12, fontWeight: 900, flexShrink: 0,
+            }}>2</span>
+            <h2 style={{ fontSize: 18, fontWeight: 900, color: '#000', margin: 0 }}>
+              Null Bubbling &amp; Partial Failure
+            </h2>
+          </div>
+          <NullBubbleDemo />
+        </div>
       </div>
     </div>
   );
