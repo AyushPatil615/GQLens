@@ -17,72 +17,76 @@ const DEMO_USERS = [
 // ─── Animated Flow Diagram ─────────────────────────────────────────────
 function FlowDiagram({ step, token, user }: { step: FlowStep; token: string | null; user: AuthUser | null }) {
   const stages: { key: FlowStep; label: string; sub: string; emoji: string }[] = [
-    { key: 'request',  label: 'HTTP Request',    sub: 'Authorization: Bearer ...', emoji: '📡' },
-    { key: 'context',  label: 'context() fn',    sub: 'server/src/index.ts',       emoji: '⚙️' },
-    { key: 'resolver', label: 'ctx.user',         sub: '3rd resolver arg',          emoji: '🔐' },
-    { key: 'response', label: 'Response',         sub: '{ data: { me: {...} } }',   emoji: '✅' },
+    { key: 'request',  label: 'HTTP Request',  sub: 'Authorization: Bearer ...', emoji: '📡' },
+    { key: 'context',  label: 'context() fn',  sub: 'server/src/index.ts',       emoji: '⚙️' },
+    { key: 'resolver', label: 'ctx.user',       sub: '3rd resolver arg',          emoji: '🔐' },
+    { key: 'response', label: 'Response',       sub: 'data: { me: {...} }',       emoji: '✅' },
   ];
 
   const activeIdx = stages.findIndex(s => s.key === step);
 
   return (
-    <div style={{ position: 'relative', padding: '8px 0' }}>
-      {/* Connecting line */}
-      <div style={{
-        position: 'absolute', top: 32, left: 32, right: 32,
-        height: 2, background: '#000', opacity: 0.08,
-        zIndex: 0,
-      }} />
-
-      <div style={{ display: 'flex', gap: 0, alignItems: 'flex-start', position: 'relative', zIndex: 1 }}>
+    <div style={{ overflow: 'hidden' }}>
+      {/* Node row with inline arrows */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0 }}>
         {stages.map((s, i) => {
-          const isActive  = s.key === step;
-          const isDone    = activeIdx > i;
+          const isActive = s.key === step;
+          const isDone   = activeIdx > i;
 
           return (
-            <div key={s.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-              {/* Node circle */}
-              <motion.div
-                animate={{
-                  background: isActive ? '#000' : isDone ? '#22C55E' : '#F3F4F6',
-                  scale:      isActive ? 1.15 : 1,
-                  boxShadow:  isActive ? '0 0 0 3px #000, 3px 3px 0 #000' : isDone ? '2px 2px 0 #000' : '2px 2px 0 #D1D5DB',
-                }}
-                transition={{ duration: 0.25 }}
-                style={{
-                  width: 52, height: 52, borderRadius: '50%',
-                  border: '2.5px solid #000',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 22,
-                }}
-              >
-                {isDone ? '✓' : s.emoji}
-              </motion.div>
+            <div key={s.key} style={{ display: 'flex', alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
+              {/* Node */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, flex: 1, minWidth: 0 }}>
+                <motion.div
+                  animate={{
+                    background: isActive ? '#000' : isDone ? '#22C55E' : '#F3F4F6',
+                    scale:      isActive ? 1.1 : 1,
+                    boxShadow:  isActive ? '0 0 0 3px #000' : isDone ? '2px 2px 0 #000' : '2px 2px 0 #D1D5DB',
+                  }}
+                  transition={{ duration: 0.25 }}
+                  style={{
+                    width: 44, height: 44, borderRadius: '50%',
+                    border: '2.5px solid #000',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 18, flexShrink: 0,
+                    color: isActive || isDone ? '#fff' : '#374151',
+                  }}
+                >
+                  {isDone ? '✓' : s.emoji}
+                </motion.div>
+                <div style={{ textAlign: 'center', padding: '0 2px' }}>
+                  <div style={{
+                    fontSize: 10.5, fontWeight: 900,
+                    color: isActive ? '#000' : '#6B7280',
+                    whiteSpace: 'nowrap',
+                  }}>{s.label}</div>
+                  <div style={{
+                    fontSize: 9, color: '#9CA3AF',
+                    fontFamily: 'var(--font-mono)',
+                    overflow: 'hidden', textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap', maxWidth: 80,
+                  }}>{s.sub}</div>
+                </div>
+              </div>
 
-              {/* Arrow between nodes */}
+              {/* Arrow connector between nodes */}
               {i < stages.length - 1 && (
-                <div style={{ position: 'absolute', left: `${(i + 1) * 25}%`, top: 24, transform: 'translateX(-50%)', zIndex: 2 }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center',
+                  paddingTop: 14, flexShrink: 0,
+                }}>
                   <motion.span
                     animate={{ color: activeIdx > i ? '#22C55E' : '#D1D5DB' }}
-                    style={{ fontSize: 16, fontWeight: 900 }}
+                    style={{ fontSize: 18, fontWeight: 900, lineHeight: 1 }}
                   >→</motion.span>
                 </div>
               )}
-
-              {/* Label */}
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 11, fontWeight: 900, color: isActive ? '#000' : '#6B7280' }}>{s.label}</div>
-                <div style={{
-                  fontSize: 9.5, color: '#9CA3AF', fontFamily: 'var(--font-mono)',
-                  maxWidth: 90, wordBreak: 'break-all', textAlign: 'center',
-                }}>{s.sub}</div>
-              </div>
             </div>
           );
         })}
       </div>
 
-      {/* Token / User badge */}
+      {/* Token / user info badges */}
       <AnimatePresence>
         {token && step !== 'idle' && (
           <motion.div
@@ -90,14 +94,14 @@ function FlowDiagram({ step, token, user }: { step: FlowStep; token: string | nu
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             style={{
-              marginTop: 14, padding: '8px 12px',
+              marginTop: 12, padding: '7px 11px',
               borderRadius: 8, border: '2px solid #000', boxShadow: '2px 2px 0 #000',
-              background: '#F0FDF4', fontSize: 11,
+              background: '#F0FDF4', fontSize: 10.5,
               fontFamily: 'var(--font-mono)', wordBreak: 'break-all', lineHeight: 1.6,
             }}
           >
             <span style={{ fontWeight: 900, color: '#166534' }}>Authorization: </span>
-            <span style={{ color: '#374151' }}>Bearer {token.slice(0, 48)}…</span>
+            <span style={{ color: '#374151' }}>Bearer {token.slice(0, 44)}…</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -204,7 +208,12 @@ function MeQueryPanel({ token }: { token: string | null }) {
         method: 'POST', headers,
         body: JSON.stringify({ query: '{ me { id name role } }' }),
       });
-      setResult(await res.json());
+      const json = await res.json() as { data?: { me: AuthUser | null }, errors?: {message:string; path?: string[]}[] };
+      // Strip server-side stacktraces from errors — they are noise for the learning demo
+      if (json.errors) {
+        json.errors = json.errors.map(e => ({ message: e.message, path: e.path }));
+      }
+      setResult(json);
     } finally {
       setLoading(false);
     }
