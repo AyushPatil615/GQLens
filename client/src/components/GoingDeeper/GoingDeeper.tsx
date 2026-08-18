@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { N1Visualizer } from '../N1Visualizer/N1Visualizer';
 import { NullBubbleDemo } from '../NullBubble/NullBubbleDemo';
 import { AuthFlowDemo } from '../AuthFlow/AuthFlowDemo';
+import { AdvancedQueriesDemo } from '../AdvancedQueries/AdvancedQueriesDemo';
 
 const FLOATERS = [
   { char: '⚡', color: '#C4B5FD', top: '10%',   left: '2%',   size: 26 },
@@ -197,6 +198,29 @@ export function GoingDeeper() {
             </h2>
           </div>
           <AuthFlowDemo />
+        </div>
+
+        {/* Divider */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#9CA3AF', whiteSpace: 'nowrap' }}>⚡ Going Deeper</span>
+          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
+        </div>
+
+        {/* Section 4: Advanced Query Patterns */}
+        <div>
+          <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{
+              background: '#000', color: '#fff', borderRadius: '50%',
+              width: 26, height: 26, display: 'inline-flex',
+              alignItems: 'center', justifyContent: 'center',
+              fontSize: 12, fontWeight: 900, flexShrink: 0,
+            }}>4</span>
+            <h2 style={{ fontSize: 18, fontWeight: 900, color: '#000', margin: 0 }}>
+              Advanced Query Patterns
+            </h2>
+          </div>
+          <AdvancedQueriesDemo />
         </div>
       </div>
     </div>

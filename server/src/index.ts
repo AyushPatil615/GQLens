@@ -9,11 +9,18 @@ import cors from 'cors';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
 
-import { typeDefs }           from './schema/typeDefs';
-import { resolvers }          from './resolvers/index';
-import { createTracingPlugin } from './plugins/tracingPlugin';
+import { typeDefs }            from './schema/typeDefs';
+import { resolvers }           from './resolvers/index';
+import { createTracingPlugin }  from './plugins/tracingPlugin';
 import { registerClient, removeClient } from './tracer';
-import { verifyToken }        from './auth/jwt';
+import { verifyToken }         from './auth/jwt';
+import {
+  apiRateLimiter,
+  depthLimitRule,
+  createComplexityPlugin,
+  MAX_QUERY_DEPTH,
+  MAX_QUERY_COMPLEXITY,
+} from './security/controls';
 import type { AppContext } from './resolvers/index';
 
 // ─── Initialise DB (side effect — creates tables + seeds data) ───────
@@ -44,6 +51,10 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// ─── Rate Limiting ────────────────────────────────────────────────────
+// Applied to /graphql only. SSE /events is exempt (long-lived connections).
+app.use('/graphql', apiRateLimiter);
+
 // ─── SSE endpoint — must be registered BEFORE Apollo middleware ──────
 app.get('/events', (req, res) => {
   const requestId = (req.query['requestId'] as string) ?? '';
@@ -70,20 +81,32 @@ app.get('/health', (_req, res) => {
   res.json({
     status:  'ok',
     message: 'GraphScope server running',
-    phase:   'Phase 2 — Real backend',
+    security: {
+      maxQueryDepth:       MAX_QUERY_DEPTH,
+      maxQueryComplexity:  MAX_QUERY_COMPLEXITY,
+      rateLimitPerMinute:  100,
+    },
   });
 });
 
-// ─── Bootstrap Apollo Server ─────────────────────────────────────────
+// ─── Bootstrap Apollo Server ───────────────────────────────────────────
 async function start() {
+  // Build schema once to pass to the complexity plugin
+  const { makeExecutableSchema } = await import('@graphql-tools/schema');
+  const executableSchema = makeExecutableSchema({ typeDefs, resolvers });
+
   const server = new ApolloServer<AppContext>({
     typeDefs,
     resolvers,
-    plugins: [createTracingPlugin()],
-    // Disable the document store so Apollo re-parses and re-validates
-    // every query. Without this, the parsingDidStart and validationDidStart
-    // plugin hooks are skipped on repeated runs, making Parser and Validator
-    // appear grayed out in the learning pipeline.
+    plugins: [
+      createTracingPlugin(),
+      createComplexityPlugin(executableSchema),
+    ],
+    // ── Query depth validation rule ──
+    validationRules: [depthLimitRule],
+    // Disable document store so Apollo re-parses/re-validates every query.
+    // Without this, parsingDidStart and validationDidStart hooks are skipped
+    // on repeated runs, making Parser and Validator appear grayed out.
     documentStore: null,
   });
 

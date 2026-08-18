@@ -4,6 +4,17 @@ node_modules/
 # ── Build outputs ────────────────────────────────────────────
 dist/
 build/
+server/dist/
+
+# ── TypeScript build cache ────────────────────────────────────
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# ── Test & coverage outputs ───────────────────────────────────
+coverage/
+.nyc_output/
+test-results/
+*.lcov
 
 # ── SQLite database files ────────────────────────────────────
 *.db
@@ -43,3 +54,4 @@ GraphScope_v1_Build_Plan.md
 GraphScope_v2_Roadmap.md
 deployment_guide.md
 GraphScope_Recommended_Feature_Roadmap.md
+GraphQL_Improvements_Roadmap.md
