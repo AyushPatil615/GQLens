@@ -8,6 +8,7 @@ import type {
 } from '../db/database';
 import { emitTrace } from '../tracer';
 import { issueToken } from '../auth/jwt';
+import type { GraphQLResolveInfo } from 'graphql';
 
 // ─── Context type ────────────────────────────────────────────────────
 export interface AuthUser {
@@ -47,9 +48,31 @@ export const resolvers = {
       return ctx.user;
     },
 
-    async student(_: unknown, args: { id: string }, ctx: AppContext): Promise<StudentRow | undefined> {
+    async student(_: unknown, args: { id: string }, ctx: AppContext, info: GraphQLResolveInfo): Promise<StudentRow | undefined> {
       const t = Date.now();
       const row = await educationQueries.getStudent(args.id);
+
+      // Capture GraphQLResolveInfo fields for the inspector demo
+      type FieldNode = import('graphql').FieldNode;
+      const selectedFields = (info.fieldNodes[0]?.selectionSet?.selections ?? [])
+        .filter((s): s is FieldNode => s.kind === 'Field')
+        .map(s => s.name.value);
+
+      emitTrace(ctx.requestId, {
+        step:    'resolver:info',
+        ms:      Date.now() - t,
+        caption: `resolver:info captured for field "${info.fieldName}"`,
+        ts:      t,
+        info: {
+          fieldName:      info.fieldName,
+          returnType:     String(info.returnType),
+          parentType:     String(info.parentType),
+          path:           info.path,
+          selectedFields,
+          argKeys:        Object.keys(info.variableValues),
+        },
+      });
+
       emitTrace(ctx.requestId, {
         step:    'db:query',
         ms:      Date.now() - t,
@@ -306,9 +329,30 @@ export const resolvers = {
 
   // ── Education nested resolvers ───────────────────────────────────
   Student: {
-    async courses(parent: StudentRow, _: unknown, ctx: AppContext): Promise<CourseRow[]> {
+    async courses(parent: StudentRow, _: unknown, ctx: AppContext, info: GraphQLResolveInfo): Promise<CourseRow[]> {
       const t = Date.now();
       const rows = await educationQueries.getCoursesForStudent(parent.id);
+
+      type FieldNode = import('graphql').FieldNode;
+      const selectedFields = (info.fieldNodes[0]?.selectionSet?.selections ?? [])
+        .filter((s): s is FieldNode => s.kind === 'Field')
+        .map(s => s.name.value);
+
+      emitTrace(ctx.requestId, {
+        step:    'resolver:info',
+        ms:      Date.now() - t,
+        caption: `resolver:info captured for nested field "${info.fieldName}"`,
+        ts:      t,
+        info: {
+          fieldName:      info.fieldName,
+          returnType:     String(info.returnType),
+          parentType:     String(info.parentType),
+          path:           info.path,
+          selectedFields,
+          argKeys:        [],
+        },
+      });
+
       emitTrace(ctx.requestId, {
         step:    'db:query',
         ms:      Date.now() - t,

@@ -13,11 +13,21 @@ export function removeClient(requestId: string): void {
 }
 
 // ─── Emit an event to a specific client ────────────────────────────
+export interface ResolveInfoSnapshot {
+  fieldName:      string;
+  returnType:     string;
+  parentType:     string;
+  path:           unknown;
+  selectedFields: string[];
+  argKeys:        string[];
+}
+
 export interface TraceEvent {
-  step:    string;   // e.g. 'parse', 'validate', 'resolve:Student', 'db:query', 'respond'
+  step:    string;   // e.g. 'parse', 'validate', 'resolver:info', 'db:query', 'respond'
   ms:      number;   // duration of this step in ms
   caption: string;   // human-readable description
   ts:      number;   // absolute timestamp (ms since epoch)
+  info?:   ResolveInfoSnapshot; // present only for resolver:info events
 }
 
 export function emitTrace(requestId: string, event: TraceEvent): void {
