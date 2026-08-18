@@ -78,7 +78,7 @@ GraphScope makes the abstract concrete:
 
 1. **😩 Act 1 — The Problem (REST)**: Interactive restaurant metaphor & real network waterfall demonstrating why REST APIs struggle with relational data, overfetching, and underfetching.
 2. **✨ Act 2 — The Solution (GraphQL)**: Live Query Builder, Mutation Editor, and procedural **3D Solar System Traversal** paired with the **Interactive AST Explorer**.
-3. **⚡ Act 3 — Going Deeper**: Three advanced visualizers — **N+1 Problem & DataLoader**, **Null Bubbling & `completeValue()`**, and **Auth & Context Flow**. Each streams real server events.
+3. **⚡ Act 3 — Going Deeper**: Five advanced visualizers — **N+1 Problem & DataLoader**, **Null Bubbling & `completeValue()`**, **Auth & Context Flow**, **Advanced Query Patterns (Variables, Fragments & Aliases)**, and **`GraphQLResolveInfo` Inspector**. Each streams real server events.
 4. **🎯 Act 4 — Interactive Challenges**: 6 scenario-based quizzes that test learners on query multipliers, execution lifecycle order, null bubbling, and field collection directives.
 
 ---
@@ -246,6 +246,59 @@ Authorization: Bearer eyJ... → verifyToken(token) → ctx.user  resolver(_, _,
 - **Live `me` Query**: Test the protected query with and without a token and see the real GraphQL response.
 - **Resolver Signature Reference**: Shows all 4 resolver args (`parent`, `args`, `context`, `info`) explained.
 
+#### 4. 📦 Advanced Query Patterns (Variables, Fragments & Aliases)
+Interactive exploration of core query mechanics used in production GraphQL clients:
+
+- **📦 Variables (`$id: ID!`)**: 
+  - Dynamic ID selector (`Alex Rivera`, `Priya Sharma`, `Jordan Lee`).
+  - Animated 4-step execution flow: `Variables Object` ➔ `Schema Validation` (type-checked before execution) ➔ `Resolver args` ➔ `Database Query`.
+  - Live query runner returning typed JSON responses from Apollo Server.
+- **🏷️ Aliases (`studentA: student(id: "1")`)**:
+  - Resolves key collisions when querying the same field multiple times in a single round-trip.
+  - Interactive diagram illustrating how AST parsing maps aliased fields to custom JSON response keys.
+- **📎 Fragments (`...StudentCard`)**:
+  - Demonstrates the DRY (Don't Repeat Yourself) principle and Relay fragment colocation pattern.
+  - Shows how fragment definitions are merged into parent selection sets during AST execution without duplicate database queries.
+
+#### 5. 🔍 `GraphQLResolveInfo` Inspector (The 4th Resolver Argument)
+Deep dive into `resolver(parent, args, context, info)` — demystifying the least understood argument in GraphQL:
+
+```text
+resolver(parent, args, context, info)
+                                 └── GraphQLResolveInfo (Field metadata & AST node)
+```
+
+- **Interactive Signature Explorer**: Visual breakdown of all 4 resolver parameters with interactive tooltips.
+- **Live Query Options**: Test single-resolver (`student`) vs nested-resolver (`student + courses`) executions.
+- **Live `info` Event Streaming**: Server emits real `resolver:info` events over SSE capturing live snapshots:
+  - `fieldName`: Exact schema field currently executing.
+  - `returnType`: Runtime GraphQL type representation (e.g. `Student`, `[Course!]!`).
+  - `parentType`: Owning schema type (e.g. `Query` shifting to `Student` for nested relations).
+  - `path`: Full hierarchical execution path trace (`student` ➔ `courses`).
+  - `fieldNodes (selections)`: Sub-fields requested by the client (enabling SQL SELECT column optimizations).
+  - `variableValues (argKeys)`: Active request variables passed into execution.
+- **Interactive Hover Legend**: Hover any field property to view its architectural role in production resolvers (tracing, field-level auth, database query projection).
+
+---
+
+### 🛡️ Production Security & Quality Controls
+
+GraphScope is built with production-grade GraphQL security controls to protect the public API from abuse:
+
+1. **🛡️ Query Depth Limiting (`graphql-depth-limit`)**:
+   - Enforces a maximum execution depth of 8 levels.
+   - Prevents recursive query DOS attacks (`student -> courses -> students -> courses -> ...`).
+   - Automatically returns standardized `QUERY_TOO_DEEP` error extensions before resolving database queries.
+2. **🔢 Query Complexity Analysis (`graphql-query-complexity`)**:
+   - Analyzes AST field weights and array multipliers before execution with a strict threshold (100 complexity points).
+   - Emits real-time SSE trace events showing calculated query complexity.
+   - Rejects expensive queries with `QUERY_TOO_COMPLEX` error extensions.
+3. **⏱️ API Rate Limiting (`express-rate-limit`)**:
+   - Limits IP requests on `/graphql` to 100 requests/minute while keeping `/events` SSE channels open.
+   - Returns standard `RATE_LIMITED` payload with retry headers.
+4. **🏷️ Standardized Error Responses (`Errors.*`)**:
+   - Uniform error formatting across all queries, mutations, and security middleware: `UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`, `BAD_USER_INPUT`, `QUERY_TOO_DEEP`, `QUERY_TOO_COMPLEX`, and `RATE_LIMITED`.
+
 ---
 
 ### Tab 4 — 🎯 Interactive Challenges
@@ -345,6 +398,8 @@ graphql_learner/
 │       │   ├── N1Visualizer/      # N+1 & DataLoader query streamer
 │       │   ├── NullBubble/        # Null Bubbling & completeValue() visualizer
 │       │   ├── AuthFlow/          # Auth & Context Flow interactive demo
+│       │   ├── AdvancedQueries/   # Variables, Fragments & Aliases visualizer
+│       │   ├── ResolveInfo/       # GraphQLResolveInfo 4th arg inspector
 │       │   ├── MutationDemo/      # Mutation editor & SQL diff panel
 │       │   ├── PipelineVisualizer/# Animated 6-step node visualizer
 │       │   └── ExecutionTimeline/ # Horizontal timeline & Step Debugger toolbar
@@ -355,8 +410,10 @@ graphql_learner/
     └── src/
         ├── index.ts               # Express app, SSE route, IPv4 DNS, Auth context & Apollo middleware
         ├── schema/typeDefs.ts     # GraphQL SDL schema (Education, Healthcare, Auth, Null Demo)
-        ├── resolvers/index.ts     # Async query, mutation, auth & relational resolvers
+        ├── resolvers/index.ts     # Async query, mutation, auth, relational resolvers & info telemetry
         ├── auth/jwt.ts            # Zero-dependency fake JWT for the auth learning demo
+        ├── security/
+        │   └── controls.ts        # Query depth limit, query complexity, rate limiter & standardized errors
         ├── db/
         │   ├── database.ts        # Hybrid SQLite / Supabase PostgreSQL adapter
         │   └── seed_postgres.ts   # Cloud database schema migration & seed script
