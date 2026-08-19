@@ -167,6 +167,15 @@ POST /graphql { student(id:"1") { name age courses { title } } }
 
 The comparison cards then show the concrete numbers: **5.6× faster, 3× fewer requests, 0 over-fetching**.
 
+#### 💡 Beginner's Primer Side Drawer (`💡 New to APIs?`)
+Located at the top-left of Tab 1, a collapsible floating drawer designed for beginners who are completely new to APIs and backend architecture:
+- **What is an API?**: Restaurant waiter analogy explaining client, API, and database roles.
+- **HTTP Methods Breakdown**: Color-coded badges and descriptions for `GET`, `POST`, `PUT`, and `DELETE`.
+- **The REST Overfetching Problem**: Visual breakdown of 3 cascading HTTP network round-trips for profile data.
+- **What is GraphQL?**: Single-request querying with exact field selection.
+- **Side-by-Side Comparison Matrix**: 8-point architectural comparison table (Endpoints, Typing, Over/Under-fetching, Real-time, Introspection).
+- **Core Vocabulary Glossary**: Quick definitions for *Client*, *Server*, *Endpoint*, *Schema*, *Query*, *Mutation*, *Resolver*, and *Subscription*.
+
 ---
 
 ### Tab 2 — ✨ The Solution (GraphQL Demo)
@@ -279,6 +288,28 @@ resolver(parent, args, context, info)
   - `variableValues (argKeys)`: Active request variables passed into execution.
 - **Interactive Hover Legend**: Hover any field property to view its architectural role in production resolvers (tracing, field-level auth, database query projection).
 
+#### 6. 🔣 Advanced Schema Types (`Enum`, `Interface`, `Union`, `Input`, `Directive`)
+Comprehensive interactive visualizer demonstrating GraphQL's advanced type system:
+- **🔢 Enum (`Role`, `Permission`)**: Strict type restrictions, client-side role picker, and schema-level validation rejection explanations.
+- **📐 Interface (`Node`)**: Abstract contract defining common fields (`id`, `name`) across distinct concrete types (`StudentNode`, `CourseNode`).
+- **🔀 Union (`SearchResult`)**: Polymorphic search returning heterogeneous types with `__resolveType` discrimination and inline fragments (`... on StudentNode`).
+- **📥 Input Object Type (`SearchInput`)**: Complex structured inputs with validation rules and output-vs-input comparison matrix.
+- **✨ Directives (`@skip`, `@include`)**: Live interactive query demonstration with `@skip(if: $hideAge)` dynamically omitting response fields.
+
+#### 7. 🎮 Embedded GraphiQL Studio (Live Schema Explorer)
+Full in-browser GraphQL IDE directly embedded into the application, connected live to the backend server:
+- **Full IDE Capabilities**: Monaco editor with syntax highlighting, schema validation, autocomplete (`Ctrl+Space`), and query execution (`Ctrl+Enter`).
+- **8 Live Presets Across Domains**: One-click quick starts for *All Students*, *Student by ID (Variables)*, *Advanced Types (Enum + Union)*, *Me (Auth)*, *Login (Mutation)*, *Patients (Healthcare)*, *Null Bubbling Demo*, and *N+1 vs DataLoader*.
+- **Integrated Documentation & Variable Panel**: Built-in interactive schema docs explorer and JSON variables editor.
+
+---
+
+### 🧠 Learning Mode vs. 🚀 Production Mode Toggle
+A global sticky header toggle allowing users to switch the educational perspective across the entire app:
+- **🧠 Learning Mode**: Emphasizes conceptual foundations — AST parsing, resolver execution lifecycle, null bubbling, and DataLoader batching.
+- **🚀 Production Mode**: Emphasizes enterprise engineering — JWT authentication, GraphQL security controls (depth/complexity limits), rate limiting, and resolver telemetry.
+- **Adaptive Visual Accents**: Dynamic badges and color-coded section headers that highlight topics based on the active mode.
+
 ---
 
 ### 🛡️ Production Security & Quality Controls
@@ -390,6 +421,8 @@ graphql_learner/
 │       ├── App.tsx                # 4-Tab Navigation (REST | Solution | Deeper | Challenges)
 │       ├── index.css              # Cream Neobrutalism tokens & responsive styles
 │       ├── config/api.ts          # Centralized API base URL reader
+│       ├── context/
+│       │   └── ModeContext.tsx    # Learning / Production mode global context & hook
 │       ├── components/
 │       │   ├── FakeDemo/          # Query builder, field toggles & visualizer layout
 │       │   ├── ASTExplorer/       # Interactive Abstract Syntax Tree breakdown
@@ -400,6 +433,8 @@ graphql_learner/
 │       │   ├── AuthFlow/          # Auth & Context Flow interactive demo
 │       │   ├── AdvancedQueries/   # Variables, Fragments & Aliases visualizer
 │       │   ├── ResolveInfo/       # GraphQLResolveInfo 4th arg inspector
+│       │   ├── AdvancedTypes/     # Enums, Interfaces, Unions, Input Types & Directives
+│       │   ├── GraphiQL/          # Embedded GraphiQL Studio with 8 live presets
 │       │   ├── MutationDemo/      # Mutation editor & SQL diff panel
 │       │   ├── PipelineVisualizer/# Animated 6-step node visualizer
 │       │   └── ExecutionTimeline/ # Horizontal timeline & Step Debugger toolbar
