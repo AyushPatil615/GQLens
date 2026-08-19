@@ -128,7 +128,6 @@ export function GoingDeeper() {
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 10, fontWeight: 900,
           }}>1</span>
-          <span style={{ background: '#000', color: '#fff', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900 }}>1</span>
           N+1 Problem &amp; DataLoader
           <span style={{ margin: '0 4px', color: '#9CA3AF' }}>→</span>
           <span style={{ background: '#000', color: '#fff', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900 }}>2</span>
