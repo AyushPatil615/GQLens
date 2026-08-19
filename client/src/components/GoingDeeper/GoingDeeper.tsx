@@ -5,6 +5,7 @@ import { AuthFlowDemo } from '../AuthFlow/AuthFlowDemo';
 import { AdvancedQueriesDemo } from '../AdvancedQueries/AdvancedQueriesDemo';
 import { ResolveInfoInspector } from '../ResolveInfo/ResolveInfoInspector';
 import { AdvancedTypesDemo } from '../AdvancedTypes/AdvancedTypesDemo';
+import { EmbeddedGraphiQL } from '../GraphiQL/EmbeddedGraphiQL';
 import { useAppMode } from '../../context/ModeContext';
 
 const FLOATERS = [
@@ -288,6 +289,30 @@ export function GoingDeeper() {
             <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 100, border: '2px solid #8B5CF6', color: '#5B21B6', background: isLearning ? '#F5F3FF' : 'transparent', opacity: isLearning ? 1 : 0.4 }}>🧠 Learning</span>
           </div>
           <AdvancedTypesDemo />
+        </div>
+
+        {/* Divider */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#9CA3AF', whiteSpace: 'nowrap' }}>⚡ Going Deeper</span>
+          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
+        </div>
+
+        {/* Section 7: Embedded GraphiQL */}
+        <div>
+          <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{
+              background: '#000', color: '#fff', borderRadius: '50%',
+              width: 26, height: 26, display: 'inline-flex',
+              alignItems: 'center', justifyContent: 'center',
+              fontSize: 12, fontWeight: 900, flexShrink: 0,
+            }}>7</span>
+            <h2 style={{ fontSize: 18, fontWeight: 900, color: '#000', margin: 0 }}>
+              GraphiQL Studio — Live Schema Explorer
+            </h2>
+            <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 100, border: '2px solid #EF4444', color: '#991B1B', background: !isLearning ? '#FEF2F2' : 'transparent', opacity: !isLearning ? 1 : 0.4 }}>🚀 Production</span>
+          </div>
+          <EmbeddedGraphiQL />
         </div>
       </div>
     </div>
