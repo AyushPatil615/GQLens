@@ -105,34 +105,6 @@ export function GoingDeeper() {
           You've seen what GraphQL can do. Now learn the <strong style={{ color: '#000' }}>hidden trap</strong> every
           real-world GraphQL developer must know — and the industry fix that solves it.
         </motion.p>
-
-        {/* Step breadcrumb */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            marginTop: 20,
-            padding: '8px 16px',
-            background: '#fff',
-            border: '2.5px solid #000',
-            boxShadow: '3px 3px 0 #000',
-            borderRadius: 999,
-            fontSize: 12, fontWeight: 700, color: '#000',
-          }}
-        >
-          <span style={{
-            background: '#000', color: '#fff',
-            borderRadius: '50%', width: 18, height: 18,
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 10, fontWeight: 900,
-          }}>1</span>
-          N+1 Problem &amp; DataLoader
-          <span style={{ margin: '0 4px', color: '#9CA3AF' }}>→</span>
-          <span style={{ background: '#000', color: '#fff', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900 }}>2</span>
-          Null Bubbling &amp; completeValue()
-        </motion.div>
       </div>
 
       {/* ── Mode Banner ── */}
