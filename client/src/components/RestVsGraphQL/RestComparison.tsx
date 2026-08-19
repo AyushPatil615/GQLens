@@ -155,6 +155,349 @@ function RequestRow({
   );
 }
 
+// ─── Beginner Primer Drawer ───────────────────────────────────────────────────
+function BeginnerPrimer() {
+  const [open, setOpen] = useState(false);
+
+  const TOPICS = [
+    {
+      emoji: '🌐',
+      title: 'What is an API?',
+      color: '#3B82F6',
+      body: 'An API (Application Programming Interface) is the bridge between your app and a server. Think of it like a waiter at a restaurant — you (the client) tell the waiter (the API) what you want, the waiter goes to the kitchen (database), and returns with exactly what was ordered.',
+      extra: null,
+    },
+    {
+      emoji: '📋',
+      title: 'What is REST?',
+      color: '#F59E0B',
+      body: 'REST is the most common API style. It maps resources to URLs. Each URL is a fixed "endpoint" — it always returns the same shape of data whether you need all of it or not.',
+      extra: {
+        label: 'HTTP Methods (the "verbs" of REST):',
+        rows: [
+          { method: 'GET',    color: '#22C55E', desc: 'Read data — "Give me student #1"' },
+          { method: 'POST',   color: '#3B82F6', desc: 'Create — "Add a new student"' },
+          { method: 'PUT',    color: '#F59E0B', desc: 'Update — "Change student #1\'s name"' },
+          { method: 'DELETE', color: '#EF4444', desc: 'Delete — "Remove student #1"' },
+        ],
+      },
+    },
+    {
+      emoji: '📦',
+      title: 'The REST Problem — Overfetching',
+      color: '#EF4444',
+      body: 'REST endpoints return everything, even fields you don\'t need. To show a student\'s name and courses, you make 3 separate requests — one after another. This is slow and wasteful.',
+      extra: {
+        label: 'Example — 3 round trips just to show a profile:',
+        code: `GET /api/students/1\n→ { id, name, age, address, phone, … }\n\nGET /api/students/1/courses\n→ [ { id, title, instructor, credits, … } ]\n\nGET /api/instructors/42\n→ { id, name, bio, office, … }`,
+      },
+    },
+    {
+      emoji: '⚡',
+      title: 'What is GraphQL?',
+      color: '#8B5CF6',
+      body: 'GraphQL (invented at Facebook in 2012, open-sourced 2015) replaces many REST endpoints with a single endpoint. You write a query describing exactly which fields you want. The server returns only those fields — nothing more, nothing less.',
+      extra: {
+        label: 'Same data — ONE request:',
+        code: `query {\n  student(id: "1") {\n    name         # only what I need\n    courses {\n      title\n      instructor { name }\n    }\n  }\n}`,
+      },
+    },
+    {
+      emoji: '🔄',
+      title: 'REST vs GraphQL — Side by Side',
+      color: '#22C55E',
+      body: null,
+      extra: {
+        label: null,
+        table: [
+          ['Feature',          'REST',                     'GraphQL'],
+          ['Endpoints',        'Many (one per resource)',   'One (/graphql)'],
+          ['Response shape',   'Fixed by server',          'Defined by client'],
+          ['Overfetching',     '✅ Common problem',         '❌ Eliminated'],
+          ['Underfetching',    '✅ Requires extra requests','❌ One query does it all'],
+          ['Type system',      '❌ No built-in',           '✅ Strongly typed schema'],
+          ['Introspection',    '❌ No standard',           '✅ Query the schema itself'],
+          ['Real-time',        '❌ Polling or webhooks',   '✅ Subscriptions built-in'],
+        ],
+      },
+    },
+    {
+      emoji: '🔑',
+      title: 'Key GraphQL Concepts',
+      color: '#EC4899',
+      body: null,
+      extra: {
+        label: null,
+        glossary: [
+          ['Schema',      '#C4B5FD', 'The "menu" — defines every type and operation available'],
+          ['Query',       '#86EFAC', 'A read operation (equivalent to GET in REST)'],
+          ['Mutation',    '#FDB97D', 'A write operation (create/update/delete)'],
+          ['Resolver',    '#87CEEF', 'The function that actually fetches the data for a field'],
+          ['Type',        '#FDA4AF', 'A named shape: type Student { id: ID!, name: String! }'],
+          ['Field',       '#C4B5FD', 'A single piece of data inside a type (like name or age)'],
+          ['Subscription','#86EFAC', 'Real-time: the server pushes data when it changes'],
+          ['Introspection','#FDB97D', 'Querying GraphQL to discover what queries are possible'],
+        ],
+      },
+    },
+  ];
+
+  return (
+    <>
+      {/* FAB Button — top left, below header */}
+      <motion.button
+        onClick={() => setOpen(true)}
+        whileHover={{ scale: 1.05, x: 2 }}
+        whileTap={{ scale: 0.97 }}
+        style={{
+          position: 'fixed',
+          top: 68,        // below 54px header
+          left: 20,
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 7,
+          padding: '8px 14px',
+          background: '#fff',
+          border: '2.5px solid #000',
+          borderRadius: 999,
+          boxShadow: '3px 3px 0 #000',
+          cursor: 'pointer',
+          fontWeight: 800,
+          fontSize: 12,
+          fontFamily: 'var(--font-sans)',
+          color: '#000',
+        }}
+      >
+        <span style={{ fontSize: 14 }}>💡</span>
+        <span>New to APIs?</span>
+        <span style={{
+          fontSize: 9.5, fontWeight: 900,
+          background: '#FDB97D', color: '#000',
+          padding: '1px 6px', borderRadius: 100,
+          border: '1.5px solid #000',
+        }}>START HERE</span>
+      </motion.button>
+
+      {/* Backdrop */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setOpen(false)}
+            style={{
+              position: 'fixed', inset: 0,
+              background: 'rgba(0,0,0,0.4)',
+              zIndex: 200,
+              backdropFilter: 'blur(3px)',
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Side Drawer — slides from LEFT */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="drawer"
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+            style={{
+              position: 'fixed',
+              top: 0, left: 0, bottom: 0,
+              width: 'min(480px, 95vw)',
+              zIndex: 300,
+              background: '#FFF8F0',
+              borderRight: '3px solid #000',
+              boxShadow: '6px 0 0 #000',
+              display: 'flex',
+              flexDirection: 'column',
+              overflowY: 'auto',
+            }}
+          >
+            {/* Drawer Header */}
+            <div style={{
+              padding: '16px 20px',
+              background: '#000',
+              borderBottom: '2.5px solid #000',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              flexShrink: 0,
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+            }}>
+              <span style={{ fontSize: 22 }}>💡</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 900, color: '#fff' }}>Beginner's Primer</div>
+                <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>APIs, REST & GraphQL — explained from scratch</div>
+              </div>
+              <motion.button
+                onClick={() => setOpen(false)}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                style={{
+                  background: '#1E293B', border: '2px solid #334155',
+                  borderRadius: 8, color: '#94A3B8', cursor: 'pointer',
+                  fontSize: 15, width: 30, height: 30,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 900, flexShrink: 0,
+                }}
+              >✕</motion.button>
+            </div>
+
+            {/* Drawer Body */}
+            <div style={{ padding: '16px 18px 48px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+              {/* Intro note */}
+              <div style={{
+                padding: '10px 14px', borderRadius: 8,
+                background: '#F0FDF4', border: '2px solid #22C55E',
+                fontSize: 12, color: '#166534', lineHeight: 1.6, fontWeight: 500,
+              }}>
+                👋 Already know REST and GraphQL? <strong>Close this</strong> and dive right in.<br/>
+                New here? Read on — you'll be ready in <strong>3 minutes</strong>.
+              </div>
+
+              {TOPICS.map((t, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.06 }}
+                  style={{
+                    border: `2.5px solid ${t.color}`,
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    boxShadow: `3px 3px 0 ${t.color}`,
+                    background: '#fff',
+                  }}
+                >
+                  {/* Card Header */}
+                  <div style={{
+                    padding: '9px 14px',
+                    background: `${t.color}18`,
+                    borderBottom: `1.5px solid ${t.color}`,
+                    display: 'flex', alignItems: 'center', gap: 8,
+                  }}>
+                    <span style={{ fontSize: 16 }}>{t.emoji}</span>
+                    <span style={{ fontSize: 12.5, fontWeight: 900, color: t.color }}>{t.title}</span>
+                  </div>
+
+                  <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {/* Body text */}
+                    {t.body && (
+                      <p style={{ margin: 0, fontSize: 12, color: '#374151', lineHeight: 1.7, fontWeight: 500 }}>
+                        {t.body}
+                      </p>
+                    )}
+
+                    {/* HTTP methods rows */}
+                    {t.extra && 'rows' in t.extra && (
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 900, color: '#9CA3AF', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t.extra.label}</div>
+                        {t.extra.rows!.map((r: { method: string; color: string; desc: string }) => (
+                          <div key={r.method} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
+                            <span style={{ fontSize: 10, fontWeight: 900, color: r.color, background: `${r.color}18`, padding: '2px 8px', borderRadius: 4, border: `1.5px solid ${r.color}`, fontFamily: 'var(--font-mono)', flexShrink: 0, minWidth: 52, textAlign: 'center' }}>{r.method}</span>
+                            <span style={{ fontSize: 11.5, color: '#374151', lineHeight: 1.5 }}>{r.desc}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Code block */}
+                    {t.extra && 'code' in t.extra && (
+                      <div>
+                        {t.extra.label && <div style={{ fontSize: 10, fontWeight: 900, color: '#9CA3AF', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t.extra.label}</div>}
+                        <pre style={{
+                          margin: 0, padding: '10px 12px',
+                          background: '#0F172A', borderRadius: 8,
+                          border: '2px solid #1E293B',
+                          fontSize: 10.5, fontFamily: 'var(--font-mono)',
+                          color: '#86EFAC', lineHeight: 1.7,
+                          whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                        }}>{t.extra.code}</pre>
+                      </div>
+                    )}
+
+                    {/* Comparison table */}
+                    {t.extra && 'table' in t.extra && (
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                          {t.extra.table!.map((row: string[], ri: number) => (
+                            <tr key={ri} style={{ background: ri === 0 ? '#0F172A' : ri % 2 === 0 ? '#F8FAFC' : '#fff' }}>
+                              {row.map((cell: string, ci: number) => (
+                                <td key={ci} style={{
+                                  padding: '6px 10px',
+                                  border: '1.5px solid #E5E7EB',
+                                  fontWeight: ri === 0 ? 900 : ci === 0 ? 700 : 500,
+                                  color: ri === 0 ? '#fff' : ci === 0 ? '#111827' : '#374151',
+                                  fontSize: ri === 0 ? 10 : 11,
+                                  textTransform: ri === 0 ? 'uppercase' : 'none',
+                                  letterSpacing: ri === 0 ? '0.05em' : 'normal',
+                                  whiteSpace: 'nowrap',
+                                }}>
+                                  {cell}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Glossary */}
+                    {t.extra && 'glossary' in t.extra && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {t.extra.glossary!.map(([term, color, def]: string[]) => (
+                          <div key={term} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                            <span style={{
+                              fontSize: 10, fontWeight: 900,
+                              color: '#000', background: color,
+                              padding: '2px 7px', borderRadius: 4,
+                              fontFamily: 'var(--font-mono)',
+                              flexShrink: 0, marginTop: 2,
+                              border: '1.5px solid #000',
+                            }}>{term}</span>
+                            <span style={{ fontSize: 11.5, color: '#374151', lineHeight: 1.5 }}>{def}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+
+              {/* CTA */}
+              <motion.button
+                onClick={() => setOpen(false)}
+                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: 1.01 }}
+                style={{
+                  padding: '12px 18px',
+                  background: '#000', color: '#fff',
+                  border: '2.5px solid #000', borderRadius: 10,
+                  fontWeight: 900, fontSize: 13, cursor: 'pointer',
+                  boxShadow: '4px 4px 0 #555',
+                  fontFamily: 'var(--font-sans)',
+                }}
+              >
+                Got it — show me the REST problem →
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────
 export function RestComparison({ onTryDemo }: { onTryDemo: () => void }) {
   const [animStep, setAnimStep] = useState(0);
@@ -218,6 +561,8 @@ export function RestComparison({ onTryDemo }: { onTryDemo: () => void }) {
         ))}
       </div>
 
+      {/* Floating Beginner Primer */}
+      <BeginnerPrimer />
       <div style={{ maxWidth: 860, margin: '0 auto', padding: '44px 24px 60px', position: 'relative', zIndex: 1 }}>
 
         {/* ── Hero ── */}
