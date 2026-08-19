@@ -6,6 +6,8 @@ import { GoingDeeper }     from './components/GoingDeeper/GoingDeeper';
 import { ChallengesView }   from './components/Challenges/ChallengesView';
 import { DOMAINS, getDomain } from './data/domains';
 import type { DomainId } from './data/domains';
+import { ModeProvider, useAppMode } from './context/ModeContext';
+import type { AppMode } from './context/ModeContext';
 import './index.css';
 
 type Tab = 'rest' | 'graphql' | 'deeper' | 'challenges';
@@ -17,11 +19,98 @@ const TAB_CONFIG: { id: Tab; emoji: string; label: string }[] = [
   { id: 'challenges', emoji: '🎯', label: 'Challenges' },
 ];
 
+// ─── Mode Toggle Component ────────────────────────────────────────────────────
+function ModeToggle() {
+  const { mode, setMode } = useAppMode();
+  const isLearning = mode === 'learning';
 
-export default function App() {
+  const MODES: { key: AppMode; emoji: string; label: string; color: string; desc: string }[] = [
+    { key: 'learning',   emoji: '🧠', label: 'Learning',   color: '#8B5CF6', desc: 'Concepts: AST, parser, resolver, tracing, null bubbling' },
+    { key: 'production', emoji: '🚀', label: 'Production',  color: '#EF4444', desc: 'Engineering: auth, rate limiting, depth limits, complexity' },
+  ];
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 'auto' }}>
+      {/* Divider */}
+      <span style={{ width: 1, height: 22, background: '#E5E7EB', display: 'inline-block' }} />
+
+      {/* Label */}
+      <span style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+        Mode
+      </span>
+
+      {/* Toggle pill */}
+      <motion.div
+        style={{
+          display: 'flex',
+          background: 'var(--bg-base)',
+          border: 'var(--border-2)',
+          borderRadius: 10,
+          padding: 3,
+          gap: 2,
+          position: 'relative',
+        }}
+        title={MODES.find(m => m.key === mode)?.desc}
+      >
+        {MODES.map(m => (
+          <motion.button
+            key={m.key}
+            onClick={() => setMode(m.key)}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              padding: '5px 11px',
+              borderRadius: 7,
+              border: 'none',
+              background: mode === m.key ? m.color : 'transparent',
+              color: mode === m.key ? '#fff' : '#6B7280',
+              fontSize: 11.5,
+              fontWeight: 800,
+              fontFamily: 'var(--font-sans)',
+              cursor: 'pointer',
+              transition: 'background 0.18s, color 0.18s',
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <span>{m.emoji}</span>
+            <span className="gs-tab-label">{m.label}</span>
+          </motion.button>
+        ))}
+      </motion.div>
+
+      {/* Live indicator badge */}
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={mode}
+          initial={{ opacity: 0, scale: 0.8, y: -4 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          style={{
+            fontSize: 9.5,
+            fontWeight: 900,
+            padding: '2px 7px',
+            borderRadius: 100,
+            border: `2px solid ${isLearning ? '#8B5CF6' : '#EF4444'}`,
+            color: isLearning ? '#8B5CF6' : '#EF4444',
+            background: isLearning ? '#F5F3FF' : '#FEF2F2',
+            whiteSpace: 'nowrap',
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {isLearning ? 'Concepts' : 'Engineering'}
+        </motion.span>
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Inner app (needs ModeProvider to be a parent) ───────────────────────────
+function AppInner() {
   const [tab, setTab]         = useState<Tab>('rest');
   const [domainId, setDomainId] = useState<DomainId>('education');
-
   const domain = getDomain(domainId);
 
   return (
@@ -128,6 +217,9 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Mode Toggle — always visible */}
+        <ModeToggle />
       </header>
 
       {/* ── Active page ── */}
@@ -151,5 +243,14 @@ export default function App() {
         </motion.div>
       </AnimatePresence>
     </div>
+  );
+}
+
+// ─── Root export (wraps in ModeProvider) ─────────────────────────────────────
+export default function App() {
+  return (
+    <ModeProvider>
+      <AppInner />
+    </ModeProvider>
   );
 }

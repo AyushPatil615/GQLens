@@ -1,10 +1,11 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { N1Visualizer } from '../N1Visualizer/N1Visualizer';
 import { NullBubbleDemo } from '../NullBubble/NullBubbleDemo';
 import { AuthFlowDemo } from '../AuthFlow/AuthFlowDemo';
 import { AdvancedQueriesDemo } from '../AdvancedQueries/AdvancedQueriesDemo';
 import { ResolveInfoInspector } from '../ResolveInfo/ResolveInfoInspector';
 import { AdvancedTypesDemo } from '../AdvancedTypes/AdvancedTypesDemo';
+import { useAppMode } from '../../context/ModeContext';
 
 const FLOATERS = [
   { char: '⚡', color: '#C4B5FD', top: '10%',   left: '2%',   size: 26 },
@@ -15,6 +16,8 @@ const FLOATERS = [
 ];
 
 export function GoingDeeper() {
+  const { mode } = useAppMode();
+  const isLearning = mode === 'learning';
   return (
     <div style={{
       minHeight: '100vh',
@@ -133,16 +136,55 @@ export function GoingDeeper() {
         </motion.div>
       </div>
 
+      {/* ── Mode Banner ── */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={mode}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 8 }}
+          transition={{ duration: 0.25 }}
+          style={{
+            margin: '0 24px 0',
+            maxWidth: 1180,
+            marginLeft: 'auto', marginRight: 'auto',
+            width: 'calc(100% - 48px)',
+            padding: '12px 20px',
+            borderRadius: 12,
+            border: `2.5px solid ${isLearning ? '#8B5CF6' : '#EF4444'}`,
+            background: isLearning ? '#F5F3FF' : '#FEF2F2',
+            boxShadow: `3px 3px 0 ${isLearning ? '#8B5CF6' : '#EF4444'}`,
+            display: 'flex', alignItems: 'center', gap: 12,
+            position: 'relative', zIndex: 1,
+          }}
+        >
+          <span style={{ fontSize: 20 }}>{isLearning ? '🧠' : '🚀'}</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 900, color: isLearning ? '#5B21B6' : '#991B1B', marginBottom: 2 }}>
+              {isLearning ? 'Learning Mode — focus on how GraphQL works conceptually' : 'Production Mode — focus on engineering, security, and scalability'}
+            </div>
+            <div style={{ fontSize: 11, color: isLearning ? '#7C3AED' : '#B91C1C', lineHeight: 1.5 }}>
+              {isLearning
+                ? 'Sections highlighted in 🧠 purple are concept-first: AST, resolver lifecycle, null bubbling, DataLoader batching, and advanced type theory.'
+                : 'Sections highlighted in 🚀 red are engineering-first: JWT auth, query depth limits, complexity analysis, rate limiting, and resolve-time telemetry.'}
+            </div>
+          </div>
+          <span style={{ fontSize: 10.5, fontWeight: 900, padding: '3px 10px', borderRadius: 100, border: `2px solid ${isLearning ? '#8B5CF6' : '#EF4444'}`, color: isLearning ? '#5B21B6' : '#991B1B', whiteSpace: 'nowrap', background: '#fff' }}>
+            {isLearning ? 'Concepts' : 'Engineering'} Active
+          </span>
+        </motion.div>
+      </AnimatePresence>
+
       {/* Main content */}
       <div style={{
-        padding: '0 24px 52px',
+        padding: '32px 24px 52px',
         maxWidth: 1180, margin: '0 auto', width: '100%',
         position: 'relative', zIndex: 1,
         display: 'flex', flexDirection: 'column', gap: 48,
       }}>
         {/* Section 1: N+1 & DataLoader */}
         <div>
-          <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span style={{
               background: '#000', color: '#fff', borderRadius: '50%',
               width: 26, height: 26, display: 'inline-flex',
@@ -152,6 +194,7 @@ export function GoingDeeper() {
             <h2 style={{ fontSize: 18, fontWeight: 900, color: '#000', margin: 0 }}>
               The N+1 Problem &amp; DataLoader
             </h2>
+            <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 100, border: '2px solid #8B5CF6', color: '#5B21B6', background: isLearning ? '#F5F3FF' : 'transparent', opacity: isLearning ? 1 : 0.4 }}>🧠 Learning</span>
           </div>
           <N1Visualizer />
         </div>
@@ -175,6 +218,7 @@ export function GoingDeeper() {
             <h2 style={{ fontSize: 18, fontWeight: 900, color: '#000', margin: 0 }}>
               Null Bubbling &amp; Partial Failure
             </h2>
+            <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 100, border: '2px solid #8B5CF6', color: '#5B21B6', background: isLearning ? '#F5F3FF' : 'transparent', opacity: isLearning ? 1 : 0.4 }}>🧠 Learning</span>
           </div>
           <NullBubbleDemo />
         </div>
@@ -198,6 +242,7 @@ export function GoingDeeper() {
             <h2 style={{ fontSize: 18, fontWeight: 900, color: '#000', margin: 0 }}>
               Auth &amp; Context Flow
             </h2>
+            <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 100, border: '2px solid #EF4444', color: '#991B1B', background: !isLearning ? '#FEF2F2' : 'transparent', opacity: !isLearning ? 1 : 0.4 }}>🚀 Production</span>
           </div>
           <AuthFlowDemo />
         </div>
@@ -221,6 +266,7 @@ export function GoingDeeper() {
             <h2 style={{ fontSize: 18, fontWeight: 900, color: '#000', margin: 0 }}>
               Advanced Query Patterns
             </h2>
+            <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 100, border: '2px solid #8B5CF6', color: '#5B21B6', background: isLearning ? '#F5F3FF' : 'transparent', opacity: isLearning ? 1 : 0.4 }}>🧠 Learning</span>
           </div>
           <AdvancedQueriesDemo />
         </div>
@@ -244,6 +290,7 @@ export function GoingDeeper() {
             <h2 style={{ fontSize: 18, fontWeight: 900, color: '#000', margin: 0 }}>
               GraphQLResolveInfo Inspector
             </h2>
+            <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 100, border: '2px solid #EF4444', color: '#991B1B', background: !isLearning ? '#FEF2F2' : 'transparent', opacity: !isLearning ? 1 : 0.4 }}>🚀 Production</span>
           </div>
           <ResolveInfoInspector />
         </div>
@@ -267,6 +314,7 @@ export function GoingDeeper() {
             <h2 style={{ fontSize: 18, fontWeight: 900, color: '#000', margin: 0 }}>
               Advanced Types (Enum · Interface · Union · Input · Directive)
             </h2>
+            <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 100, border: '2px solid #8B5CF6', color: '#5B21B6', background: isLearning ? '#F5F3FF' : 'transparent', opacity: isLearning ? 1 : 0.4 }}>🧠 Learning</span>
           </div>
           <AdvancedTypesDemo />
         </div>
