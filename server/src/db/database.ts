@@ -163,6 +163,14 @@ export const educationQueries = {
       `SELECT c.*, e.student_id FROM courses c JOIN enrollments e ON e.course_id = c.id WHERE e.student_id IN (${placeholders})`
     ).all(...studentIds);
   },
+
+  async getAllCourses(): Promise<CourseRow[]> {
+    if (isPg) {
+      const res = await pgPool!.query<CourseRow>('SELECT * FROM courses');
+      return res.rows;
+    }
+    return sqliteDb!.prepare<[], CourseRow>('SELECT * FROM courses').all();
+  },
 };
 
 // ─── Healthcare Queries ──────────────────────────────────────────────

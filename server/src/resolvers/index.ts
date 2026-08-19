@@ -217,6 +217,68 @@ export const resolvers = {
       if (!row) return null;
       return { ...row, _failAge: args.failAge ?? false };
     },
+
+    // ── Advanced Types Demo ───────────────────────────────────────
+    async advancedTypesDemo(
+      _: unknown,
+      args: { input: { term: string; maxResults?: number }; role?: string },
+      ctx: AppContext,
+    ) {
+      const term       = (args.input.term ?? '').toLowerCase();
+      const maxResults = args.input.maxResults ?? 5;
+      const role       = args.role ?? 'VIEWER';
+
+      // Role → Permission mapping (demonstrates enum-based business logic)
+      const permissionMap: Record<string, string[]> = {
+        ADMIN:  ['READ', 'WRITE', 'DELETE'],
+        VIEWER: ['READ'],
+        GUEST:  [],
+      };
+      const permissions = permissionMap[role] ?? [];
+
+      // Fetch both students and courses from the database
+      const t = Date.now();
+      const [allStudents, allCourses] = await Promise.all([
+        educationQueries.getAllStudents(),
+        educationQueries.getAllCourses ? educationQueries.getAllCourses() : [],
+      ]);
+
+      emitTrace(ctx.requestId, {
+        step:    'db:query',
+        ms:      Date.now() - t,
+        caption: `[Advanced Types] Searching students & courses for term "${term}" — union type SearchResult will mix StudentNode and CourseNode`,
+        ts:      t,
+      });
+
+      // Filter by term and tag with __typename for union resolution
+      const studentResults = allStudents
+        .filter((s: StudentRow) => s.name.toLowerCase().includes(term))
+        .slice(0, maxResults)
+        .map((s: StudentRow) => ({ __typename: 'StudentNode', id: s.id, name: s.name, age: s.age }));
+
+      const courseResults = (allCourses as CourseRow[])
+        .filter((c: CourseRow) => c.title.toLowerCase().includes(term))
+        .slice(0, maxResults)
+        .map((c: CourseRow) => ({ __typename: 'CourseNode', id: c.id, name: c.title, title: c.title }));
+
+      const results = [...studentResults, ...courseResults].slice(0, maxResults);
+
+      emitTrace(ctx.requestId, {
+        step:    'resolver:advanced-types',
+        ms:      0,
+        caption: `Role: ${role} (${permissions.length} permissions) | Found ${studentResults.length} students + ${courseResults.length} courses matching "${term}"`,
+        ts:      Date.now(),
+      });
+
+      return { role, permissions, results, term: args.input.term, total: results.length };
+    },
+  },
+
+  // ── SearchResult union discriminator ─────────────────────────────
+  SearchResult: {
+    __resolveType(obj: { __typename?: string }) {
+      return obj.__typename ?? null;
+    },
   },
 
 

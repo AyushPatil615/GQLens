@@ -127,6 +127,63 @@ export const typeDefs = gql`
     expectation: String!
   }
 
+  # ─── Advanced Types Demo ─────────────────────────────────────────
+
+  """Enum — a fixed set of named constants validated at the schema level."""
+  enum Role {
+    ADMIN
+    VIEWER
+    GUEST
+  }
+
+  """Enum — permission scope granted by a role"""
+  enum Permission {
+    READ
+    WRITE
+    DELETE
+  }
+
+  """Interface — a contract that multiple types implement.
+  Any type that implements Node MUST provide id and name."""
+  interface Node {
+    id:   ID!
+    name: String!
+  }
+
+  """Student implementing the Node interface"""
+  type StudentNode implements Node {
+    id:   ID!
+    name: String!
+    age:  Int!
+  }
+
+  """Course implementing the Node interface"""
+  type CourseNode implements Node {
+    id:    ID!
+    name:  String!
+    title: String!
+  }
+
+  """Union — one field can return completely different types.
+  The client uses __typename to know which type it received."""
+  union SearchResult = StudentNode | CourseNode
+
+  """Input type — structured argument for queries and mutations.
+  Unlike output types, input types are ONLY used as arguments."""
+  input SearchInput {
+    term:       String!
+    maxResults: Int
+  }
+
+  """Payload returned from the advancedTypesDemo query"""
+  type AdvancedTypesPayload {
+    role:        Role!
+    permissions: [Permission!]!
+    results:     [SearchResult!]!
+    term:        String!
+    total:       Int!
+  }
+
   # ─── Combined Query ───────────────────────────────────────────────
   type Query {
     """Auth Demo — returns the currently logged-in user from context.
@@ -159,6 +216,11 @@ export const typeDefs = gql`
     When failAge=true the age resolver throws.
     Because age is Int! (non-null), null bubbles up making the entire student null."""
     studentNonNull(id: ID!, failAge: Boolean): StudentNonNull
+
+    """Advanced Types Demo — demonstrates Enum, Interface, Union, and Input types.
+    Searches students and courses by term and returns them as a SearchResult union.
+    The role determines which Permission enum values are returned."""
+    advancedTypesDemo(input: SearchInput!, role: Role): AdvancedTypesPayload!
   }
 
   # ─── Mutations ────────────────────────────────────────────────────

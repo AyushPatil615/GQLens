@@ -61,6 +61,14 @@ async function seedPostgres() {
         doctor_id  TEXT NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
         date       TEXT NOT NULL
       );
+
+      -- ── Enable Row-Level Security (RLS) to secure against public PostgREST exposure ──
+      ALTER TABLE students ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE enrollments ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE doctors ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE patients ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
     `);
 
     console.log('🌱 Seeding initial data...');
