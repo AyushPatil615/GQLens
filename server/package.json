@@ -7,7 +7,10 @@
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
     "build": "tsc",
-    "seed:postgres": "tsx src/db/seed_postgres.ts"
+    "seed:postgres": "tsx src/db/seed_postgres.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
@@ -33,9 +36,11 @@
     "@types/graphql-depth-limit": "^1.1.6",
     "@types/node": "^26.1.2",
     "@types/pg": "^8.11.10",
+    "@vitest/coverage-v8": "^4.1.11",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "tsx": "^4.23.11",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
   }
 }
