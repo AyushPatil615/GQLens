@@ -32,6 +32,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Rebuild native modules for Linux
+        run: npm rebuild better-sqlite3
+
       - name: Typecheck
         run: npm run typecheck
 
