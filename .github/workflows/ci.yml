@@ -34,6 +34,8 @@ jobs:
         run: npm run typecheck
 
       - name: Run smoke tests
+        env:
+          ROLLUP_SKIP_LOAD_NATIVE_PLUGIN: "true"
         run: npm run test:ci
 
   # ── Client: typecheck + build ────────────────────────────────────────
