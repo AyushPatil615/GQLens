@@ -1,318 +1,429 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { N1Visualizer } from '../N1Visualizer/N1Visualizer';
-import { NullBubbleDemo } from '../NullBubble/NullBubbleDemo';
-import { AuthFlowDemo } from '../AuthFlow/AuthFlowDemo';
-import { AdvancedQueriesDemo } from '../AdvancedQueries/AdvancedQueriesDemo';
-import { ResolveInfoInspector } from '../ResolveInfo/ResolveInfoInspector';
-import { AdvancedTypesDemo } from '../AdvancedTypes/AdvancedTypesDemo';
-import { EmbeddedGraphiQL } from '../GraphiQL/EmbeddedGraphiQL';
-import { useAppMode } from '../../context/ModeContext';
+import { N1Visualizer }          from '../N1Visualizer/N1Visualizer';
+import { NullBubbleDemo }        from '../NullBubble/NullBubbleDemo';
+import { AuthFlowDemo }          from '../AuthFlow/AuthFlowDemo';
+import { AdvancedQueriesDemo }   from '../AdvancedQueries/AdvancedQueriesDemo';
+import { ResolveInfoInspector }  from '../ResolveInfo/ResolveInfoInspector';
+import { AdvancedTypesDemo }     from '../AdvancedTypes/AdvancedTypesDemo';
+import { EmbeddedGraphiQL }      from '../GraphiQL/EmbeddedGraphiQL';
+import { StepDebugger }          from '../StepDebugger/StepDebugger';
+import { useAppMode }            from '../../context/ModeContext';
 
-const FLOATERS = [
-  { char: '⚡', color: '#C4B5FD', top: '10%',   left: '2%',   size: 26 },
-  { char: '●',  color: '#86EFAC', top: '6%',    right: '3%',  size: 16 },
-  { char: '✦',  color: '#FDB97D', top: '40%',   left: '1.5%', size: 20 },
-  { char: '⬡',  color: '#87CEEF', bottom: '25%',left: '3%',   size: 18 },
-  { char: '▲',  color: '#FDA4AF', bottom: '12%',right: '4%',  size: 14 },
+// ── Section registry ─────────────────────────────────────────────────────────
+type SectionId =
+  | 'n1' | 'null' | 'auth' | 'queries'
+  | 'resolve' | 'types' | 'graphiql' | 'debugger';
+
+interface Section {
+  id:        SectionId;
+  num:       number;
+  icon:      string;
+  label:     string;
+  sublabel:  string;
+  badge:     'learning' | 'production';
+  color:     string;   // accent color
+  component: React.ComponentType;
+}
+
+const SECTIONS: Section[] = [
+  {
+    id: 'debugger', num: 1,
+    icon: '🐛', label: 'Step Debugger',
+    sublabel: 'Walk through real execution step-by-step',
+    badge: 'learning', color: '#6366F1',
+    component: StepDebugger,
+  },
+  {
+    id: 'n1', num: 2,
+    icon: '⚡', label: 'N+1 & DataLoader',
+    sublabel: 'The #1 GraphQL performance trap',
+    badge: 'learning', color: '#F59E0B',
+    component: N1Visualizer,
+  },
+  {
+    id: 'null', num: 3,
+    icon: '💥', label: 'Null Propagation',
+    sublabel: 'How errors bubble through your schema',
+    badge: 'learning', color: '#EF4444',
+    component: NullBubbleDemo,
+  },
+  {
+    id: 'auth', num: 4,
+    icon: '🔐', label: 'Auth & Context',
+    sublabel: 'JWT, context creation, role-based access',
+    badge: 'production', color: '#8B5CF6',
+    component: AuthFlowDemo,
+  },
+  {
+    id: 'queries', num: 5,
+    icon: '🔗', label: 'Advanced Queries',
+    sublabel: 'Fragments, aliases, variables, directives',
+    badge: 'learning', color: '#0EA5E9',
+    component: AdvancedQueriesDemo,
+  },
+  {
+    id: 'resolve', num: 6,
+    icon: '📋', label: 'ResolveInfo Inspector',
+    sublabel: 'What every resolver knows at runtime',
+    badge: 'production', color: '#10B981',
+    component: ResolveInfoInspector,
+  },
+  {
+    id: 'types', num: 7,
+    icon: '🧩', label: 'Advanced Types',
+    sublabel: 'Enum, Interface, Union, Input, Directive',
+    badge: 'learning', color: '#F97316',
+    component: AdvancedTypesDemo,
+  },
+  {
+    id: 'graphiql', num: 8,
+    icon: '🛠', label: 'GraphiQL Studio',
+    sublabel: 'Live schema explorer & query IDE',
+    badge: 'production', color: '#EC4899',
+    component: EmbeddedGraphiQL,
+  },
 ];
 
+// ── Component ─────────────────────────────────────────────────────────────────
 export function GoingDeeper() {
-  const { mode } = useAppMode();
-  const isLearning = mode === 'learning';
+  const { mode }       = useAppMode();
+  const isLearning     = mode === 'learning';
+  const [activeId, setActiveId] = useState<SectionId>('debugger');
+
+  const active    = SECTIONS.find(s => s.id === activeId)!;
+  const Active    = active.component;
+
   return (
     <div style={{
-      minHeight: '100vh',
-      background: 'var(--bg-base)',
-      backgroundImage: 'radial-gradient(circle, #d4c5b5 1.5px, transparent 1.5px)',
-      backgroundSize: '28px 28px',
-      display: 'flex', flexDirection: 'column',
-      position: 'relative', overflowX: 'hidden',
+      minHeight:        '100vh',
+      background:       'var(--bg-base)',
+      backgroundImage:  'radial-gradient(circle, #d4c5b5 1.5px, transparent 1.5px)',
+      backgroundSize:   '28px 28px',
+      display:          'flex',
+      flexDirection:    'column',
     }}>
 
-      {/* Floating decorations */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-        {FLOATERS.map((f, i) => (
-          <motion.span
-            key={i}
-            animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 3 + i * 0.4, repeat: Infinity, ease: 'easeInOut', delay: i * 0.3 }}
-            style={{
-              position: 'absolute',
-              color: f.color,
-              fontSize: f.size,
-              fontWeight: 900,
-              top: (f as any).top,
-              left: (f as any).left,
-              right: (f as any).right,
-              bottom: (f as any).bottom,
-            }}
-          >
-            {f.char}
-          </motion.span>
-        ))}
-      </div>
-
-      {/* Hero */}
-      <div style={{ textAlign: 'center', padding: '44px 24px 32px', position: 'relative', zIndex: 1 }}>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4 }}
-          style={{
-            display: 'inline-block',
-            fontSize: 48, marginBottom: 14,
-          }}
-        >
-          ⚡
-        </motion.div>
-
-        <motion.h1
-          initial={{ opacity: 0, y: -14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1, ease: 'easeOut' }}
-          style={{
-            fontSize: 'clamp(26px, 4.5vw, 46px)',
-            fontWeight: 900, color: '#000',
-            fontFamily: 'var(--font-sans)',
-            letterSpacing: '-1px', lineHeight: 1.1,
-            marginBottom: 12,
-          }}
-        >
-          Going Deeper
-        </motion.h1>
-
-        {/* Underline */}
-        <motion.div
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
-          style={{
-            width: 220, height: 4, margin: '0 auto 18px',
-            background: 'linear-gradient(to right, #C4B5FD, #87CEEF, #86EFAC, #FDB97D)',
-            borderRadius: 99,
-          }}
-        />
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          style={{
-            fontSize: 15.5, color: 'var(--text-mid)',
-            maxWidth: 520, margin: '0 auto',
-            lineHeight: 1.65, fontWeight: 600,
-          }}
-        >
-          You've seen what GraphQL can do. Now learn the <strong style={{ color: '#000' }}>hidden trap</strong> every
-          real-world GraphQL developer must know — and the industry fix that solves it.
-        </motion.p>
-      </div>
-
-      {/* ── Mode Banner ── */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={mode}
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 8 }}
-          transition={{ duration: 0.25 }}
-          style={{
-            margin: '0 24px 0',
-            maxWidth: 1180,
-            marginLeft: 'auto', marginRight: 'auto',
-            width: 'calc(100% - 48px)',
-            padding: '12px 20px',
-            borderRadius: 12,
-            border: `2.5px solid ${isLearning ? '#8B5CF6' : '#EF4444'}`,
-            background: isLearning ? '#F5F3FF' : '#FEF2F2',
-            boxShadow: `3px 3px 0 ${isLearning ? '#8B5CF6' : '#EF4444'}`,
-            display: 'flex', alignItems: 'center', gap: 12,
-            position: 'relative', zIndex: 1,
-          }}
-        >
-          <span style={{ fontSize: 20 }}>{isLearning ? '🧠' : '🚀'}</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 900, color: isLearning ? '#5B21B6' : '#991B1B', marginBottom: 2 }}>
-              {isLearning ? 'Learning Mode — focus on how GraphQL works conceptually' : 'Production Mode — focus on engineering, security, and scalability'}
-            </div>
-            <div style={{ fontSize: 11, color: isLearning ? '#7C3AED' : '#B91C1C', lineHeight: 1.5 }}>
-              {isLearning
-                ? 'Sections highlighted in 🧠 purple are concept-first: AST, resolver lifecycle, null bubbling, DataLoader batching, and advanced type theory.'
-                : 'Sections highlighted in 🚀 red are engineering-first: JWT auth, query depth limits, complexity analysis, rate limiting, and resolve-time telemetry.'}
-            </div>
-          </div>
-          <span style={{ fontSize: 10.5, fontWeight: 900, padding: '3px 10px', borderRadius: 100, border: `2px solid ${isLearning ? '#8B5CF6' : '#EF4444'}`, color: isLearning ? '#5B21B6' : '#991B1B', whiteSpace: 'nowrap', background: '#fff' }}>
-            {isLearning ? 'Concepts' : 'Engineering'} Active
-          </span>
-        </motion.div>
-      </AnimatePresence>
-
-      {/* Main content */}
+      {/* ── Header ── */}
       <div style={{
-        padding: '32px 24px 52px',
-        maxWidth: 1180, margin: '0 auto', width: '100%',
-        position: 'relative', zIndex: 1,
-        display: 'flex', flexDirection: 'column', gap: 48,
+        borderBottom:  '2px solid #E5E7EB',
+        background:    'rgba(255,248,240,0.92)',
+        backdropFilter:'blur(8px)',
+        padding:       '16px 28px',
+        display:       'flex',
+        alignItems:    'center',
+        gap:           14,
+        position:      'sticky',
+        top:           0,
+        zIndex:        20,
       }}>
-        {/* Section 1: N+1 & DataLoader */}
+        <span style={{ fontSize: 22 }}>⚡</span>
         <div>
-          <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <span style={{
-              background: '#000', color: '#fff', borderRadius: '50%',
-              width: 26, height: 26, display: 'inline-flex',
-              alignItems: 'center', justifyContent: 'center',
-              fontSize: 12, fontWeight: 900, flexShrink: 0,
-            }}>1</span>
-            <h2 style={{ fontSize: 18, fontWeight: 900, color: '#000', margin: 0 }}>
-              The N+1 Problem &amp; DataLoader
-            </h2>
-            <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 100, border: '2px solid #8B5CF6', color: '#5B21B6', background: isLearning ? '#F5F3FF' : 'transparent', opacity: isLearning ? 1 : 0.4 }}>🧠 Learning</span>
+          <h1 style={{
+            fontSize: 18, fontWeight: 900, color: '#000',
+            margin: 0, letterSpacing: '-0.3px',
+          }}>
+            Going Deeper
+          </h1>
+          <p style={{
+            fontSize: 11, color: '#6B7280',
+            fontWeight: 600, margin: 0,
+          }}>
+            {SECTIONS.length} interactive modules — click any topic to explore
+          </p>
+        </div>
+
+        {/* Mode badge */}
+        <div style={{
+          marginLeft: 'auto',
+          padding: '5px 12px',
+          borderRadius: 20,
+          border: `2px solid ${isLearning ? '#8B5CF6' : '#EF4444'}`,
+          background: isLearning ? '#F5F3FF' : '#FEF2F2',
+          fontSize: 11, fontWeight: 800,
+          color: isLearning ? '#7C3AED' : '#B91C1C',
+        }}>
+          {isLearning ? '🧠 Learning Mode' : '🚀 Production Mode'}
+        </div>
+      </div>
+
+      {/* ── Two-column layout ── */}
+      <div style={{
+        display:   'flex',
+        flex:      1,
+        minHeight: 0,
+      }}>
+
+        {/* ── Left Sidebar (learning path) ── */}
+        <nav style={{
+          width:         260,
+          flexShrink:    0,
+          borderRight:   '2px solid #E5E7EB',
+          background:    '#FFF',
+          overflowY:     'auto',
+          padding:       '16px 12px',
+          display:       'flex',
+          flexDirection: 'column',
+          gap:           4,
+          position:      'sticky',
+          top:           65,            // below the sticky header
+          height:        'calc(100vh - 65px)',
+        }}>
+
+          <div style={{
+            fontSize: 9, fontWeight: 900, color: '#9CA3AF',
+            textTransform: 'uppercase', letterSpacing: '0.12em',
+            padding: '4px 8px', marginBottom: 8,
+          }}>
+            Learning Path
           </div>
-          <N1Visualizer />
-        </div>
 
-        {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#9CA3AF', whiteSpace: 'nowrap' }}>⚡ Going Deeper</span>
-          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
-        </div>
+          {SECTIONS.map((s, i) => {
+            const isActive  = s.id === activeId;
+            const isBadgeLearning = s.badge === 'learning';
 
-        {/* Section 2: Null Bubbling */}
-        <div>
-          <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{
-              background: '#000', color: '#fff', borderRadius: '50%',
-              width: 26, height: 26, display: 'inline-flex',
-              alignItems: 'center', justifyContent: 'center',
-              fontSize: 12, fontWeight: 900, flexShrink: 0,
-            }}>2</span>
-            <h2 style={{ fontSize: 18, fontWeight: 900, color: '#000', margin: 0 }}>
-              Null Bubbling &amp; Partial Failure
-            </h2>
-            <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 100, border: '2px solid #8B5CF6', color: '#5B21B6', background: isLearning ? '#F5F3FF' : 'transparent', opacity: isLearning ? 1 : 0.4 }}>🧠 Learning</span>
+            return (
+              <motion.button
+                key={s.id}
+                onClick={() => setActiveId(s.id)}
+                whileTap={{ scale: 0.97 }}
+                style={{
+                  display:       'flex',
+                  alignItems:    'center',
+                  gap:           10,
+                  padding:       '9px 10px',
+                  borderRadius:  10,
+                  border:        isActive ? `2px solid ${s.color}` : '2px solid transparent',
+                  background:    isActive ? `${s.color}18` : 'transparent',
+                  cursor:        'pointer',
+                  textAlign:     'left',
+                  width:         '100%',
+                  fontFamily:    'var(--font-sans)',
+                  transition:    'background 0.15s, border-color 0.15s',
+                  boxShadow:     isActive ? `2px 2px 0 ${s.color}` : 'none',
+                }}
+              >
+                {/* Number badge */}
+                <div style={{
+                  width:          26, height: 26, borderRadius: 7,
+                  background:     isActive ? s.color : '#F3F4F6',
+                  display:        'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink:     0,
+                  fontSize:       11, fontWeight: 900,
+                  color:          isActive ? '#FFF' : '#9CA3AF',
+                  fontFamily:     'var(--font-mono)',
+                  transition:     'background 0.15s, color 0.15s',
+                }}>
+                  {i + 1 < 10 ? `0${i + 1}` : i + 1}
+                </div>
+
+                {/* Text */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize:     12, fontWeight: 800,
+                    color:        isActive ? s.color : '#374151',
+                    whiteSpace:   'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    transition:   'color 0.15s',
+                  }}>
+                    {s.icon} {s.label}
+                  </div>
+                  <div style={{
+                    fontSize:     9.5, color: '#9CA3AF', fontWeight: 600,
+                    whiteSpace:   'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    marginTop:    2,
+                  }}>
+                    {s.sublabel}
+                  </div>
+                </div>
+
+                {/* Mode badge dot */}
+                <div style={{
+                  width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                  background: isBadgeLearning ? '#8B5CF6' : '#EF4444',
+                  opacity: (isLearning && isBadgeLearning) || (!isLearning && !isBadgeLearning) ? 1 : 0.25,
+                }} />
+              </motion.button>
+            );
+          })}
+
+          {/* Legend */}
+          <div style={{
+            marginTop: 'auto', paddingTop: 16,
+            borderTop: '1px solid #F3F4F6',
+            display: 'flex', flexDirection: 'column', gap: 5,
+          }}>
+            {[
+              { color: '#8B5CF6', label: 'Concept (Learning)' },
+              { color: '#EF4444', label: 'Engineering (Production)' },
+            ].map(l => (
+              <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: l.color, flexShrink: 0 }} />
+                <span style={{ fontSize: 9.5, fontWeight: 600, color: '#9CA3AF' }}>{l.label}</span>
+              </div>
+            ))}
           </div>
-          <NullBubbleDemo />
-        </div>
+        </nav>
 
-        {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#9CA3AF', whiteSpace: 'nowrap' }}>⚡ Going Deeper</span>
-          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
-        </div>
+        {/* ── Content panel ── */}
+        <div style={{
+          flex:      1,
+          overflowY: 'auto',
+          padding:   '28px 32px 48px',
+          minWidth:  0,
+        }}>
 
-        {/* Section 3: Auth & Context Flow */}
-        <div>
-          <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{
-              background: '#000', color: '#fff', borderRadius: '50%',
-              width: 26, height: 26, display: 'inline-flex',
-              alignItems: 'center', justifyContent: 'center',
-              fontSize: 12, fontWeight: 900, flexShrink: 0,
-            }}>3</span>
-            <h2 style={{ fontSize: 18, fontWeight: 900, color: '#000', margin: 0 }}>
-              Auth &amp; Context Flow
-            </h2>
-            <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 100, border: '2px solid #EF4444', color: '#991B1B', background: !isLearning ? '#FEF2F2' : 'transparent', opacity: !isLearning ? 1 : 0.4 }}>🚀 Production</span>
+          {/* Section header */}
+          <div style={{
+            display:      'flex',
+            alignItems:   'center',
+            gap:          12,
+            marginBottom: 24,
+            paddingBottom: 18,
+            borderBottom: `3px solid ${active.color}`,
+          }}>
+            <div style={{
+              width:      44, height: 44, borderRadius: 12,
+              background: active.color,
+              display:    'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize:   20,
+              boxShadow:  `3px 3px 0 rgba(0,0,0,0.15)`,
+              flexShrink: 0,
+            }}>
+              {active.icon}
+            </div>
+            <div>
+              <h2 style={{
+                fontSize: 20, fontWeight: 900, color: '#000',
+                margin: 0, letterSpacing: '-0.3px',
+              }}>
+                {active.label}
+              </h2>
+              <p style={{
+                fontSize: 12, color: '#6B7280',
+                fontWeight: 600, margin: 0, marginTop: 2,
+              }}>
+                {active.sublabel}
+              </p>
+            </div>
+
+            {/* Badge */}
+            <div style={{
+              marginLeft: 'auto',
+              padding: '5px 12px',
+              borderRadius: 20,
+              border: `2px solid ${active.badge === 'learning' ? '#8B5CF6' : '#EF4444'}`,
+              background: active.badge === 'learning' ? '#F5F3FF' : '#FEF2F2',
+              fontSize: 10, fontWeight: 800,
+              color: active.badge === 'learning' ? '#7C3AED' : '#B91C1C',
+              flexShrink: 0,
+            }}>
+              {active.badge === 'learning' ? '🧠 Concept' : '🚀 Engineering'}
+            </div>
           </div>
-          <AuthFlowDemo />
-        </div>
 
-        {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#9CA3AF', whiteSpace: 'nowrap' }}>⚡ Going Deeper</span>
-          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
-        </div>
+          {/* Animated section content */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeId}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+            >
+              <Active />
+            </motion.div>
+          </AnimatePresence>
 
-        {/* Section 4: Advanced Query Patterns */}
-        <div>
-          <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{
-              background: '#000', color: '#fff', borderRadius: '50%',
-              width: 26, height: 26, display: 'inline-flex',
-              alignItems: 'center', justifyContent: 'center',
-              fontSize: 12, fontWeight: 900, flexShrink: 0,
-            }}>4</span>
-            <h2 style={{ fontSize: 18, fontWeight: 900, color: '#000', margin: 0 }}>
-              Advanced Query Patterns
-            </h2>
-            <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 100, border: '2px solid #8B5CF6', color: '#5B21B6', background: isLearning ? '#F5F3FF' : 'transparent', opacity: isLearning ? 1 : 0.4 }}>🧠 Learning</span>
+          {/* Bottom navigation */}
+          <div style={{
+            display:       'flex',
+            justifyContent:'space-between',
+            alignItems:    'center',
+            marginTop:     40,
+            paddingTop:    20,
+            borderTop:     '2px solid #E5E7EB',
+          }}>
+            {(() => {
+              const idx   = SECTIONS.findIndex(s => s.id === activeId);
+              const prev  = SECTIONS[idx - 1];
+              const next  = SECTIONS[idx + 1];
+              return (
+                <>
+                  {prev ? (
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => setActiveId(prev.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '8px 14px',
+                        border: `2px solid ${prev.color}`,
+                        borderRadius: 10,
+                        background: '#FFF',
+                        cursor: 'pointer',
+                        fontSize: 12, fontWeight: 800,
+                        color: prev.color,
+                        boxShadow: `2px 2px 0 ${prev.color}`,
+                        fontFamily: 'var(--font-sans)',
+                      }}
+                    >
+                      ← {prev.icon} {prev.label}
+                    </motion.button>
+                  ) : <div />}
+
+                  {/* Progress dots */}
+                  <div style={{ display: 'flex', gap: 5 }}>
+                    {SECTIONS.map(s => (
+                      <button
+                        key={s.id}
+                        onClick={() => setActiveId(s.id)}
+                        style={{
+                          width: s.id === activeId ? 20 : 8,
+                          height: 8, borderRadius: 99,
+                          background: s.id === activeId ? active.color : '#E5E7EB',
+                          border: 'none', cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          padding: 0,
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {next ? (
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => setActiveId(next.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '8px 14px',
+                        border: `2px solid ${next.color}`,
+                        borderRadius: 10,
+                        background: next.color,
+                        cursor: 'pointer',
+                        fontSize: 12, fontWeight: 800,
+                        color: '#FFF',
+                        boxShadow: `2px 2px 0 rgba(0,0,0,0.2)`,
+                        fontFamily: 'var(--font-sans)',
+                      }}
+                    >
+                      {next.icon} {next.label} →
+                    </motion.button>
+                  ) : (
+                    <div style={{
+                      padding: '8px 14px',
+                      border: '2px solid #10B981',
+                      borderRadius: 10,
+                      background: '#10B981',
+                      fontSize: 12, fontWeight: 800, color: '#FFF',
+                      boxShadow: '2px 2px 0 rgba(0,0,0,0.2)',
+                      fontFamily: 'var(--font-sans)',
+                    }}>
+                      ✓ All topics covered!
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
-          <AdvancedQueriesDemo />
-        </div>
-
-        {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#9CA3AF', whiteSpace: 'nowrap' }}>⚡ Going Deeper</span>
-          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
-        </div>
-
-        {/* Section 5: GraphQLResolveInfo Inspector */}
-        <div>
-          <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{
-              background: '#000', color: '#fff', borderRadius: '50%',
-              width: 26, height: 26, display: 'inline-flex',
-              alignItems: 'center', justifyContent: 'center',
-              fontSize: 12, fontWeight: 900, flexShrink: 0,
-            }}>5</span>
-            <h2 style={{ fontSize: 18, fontWeight: 900, color: '#000', margin: 0 }}>
-              GraphQLResolveInfo Inspector
-            </h2>
-            <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 100, border: '2px solid #EF4444', color: '#991B1B', background: !isLearning ? '#FEF2F2' : 'transparent', opacity: !isLearning ? 1 : 0.4 }}>🚀 Production</span>
-          </div>
-          <ResolveInfoInspector />
-        </div>
-
-        {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#9CA3AF', whiteSpace: 'nowrap' }}>⚡ Going Deeper</span>
-          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
-        </div>
-
-        {/* Section 6: Advanced Types */}
-        <div>
-          <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{
-              background: '#000', color: '#fff', borderRadius: '50%',
-              width: 26, height: 26, display: 'inline-flex',
-              alignItems: 'center', justifyContent: 'center',
-              fontSize: 12, fontWeight: 900, flexShrink: 0,
-            }}>6</span>
-            <h2 style={{ fontSize: 18, fontWeight: 900, color: '#000', margin: 0 }}>
-              Advanced Types (Enum · Interface · Union · Input · Directive)
-            </h2>
-            <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 100, border: '2px solid #8B5CF6', color: '#5B21B6', background: isLearning ? '#F5F3FF' : 'transparent', opacity: isLearning ? 1 : 0.4 }}>🧠 Learning</span>
-          </div>
-          <AdvancedTypesDemo />
-        </div>
-
-        {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#9CA3AF', whiteSpace: 'nowrap' }}>⚡ Going Deeper</span>
-          <div style={{ flex: 1, height: 2, background: '#000', opacity: 0.1 }} />
-        </div>
-
-        {/* Section 7: Embedded GraphiQL */}
-        <div>
-          <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <span style={{
-              background: '#000', color: '#fff', borderRadius: '50%',
-              width: 26, height: 26, display: 'inline-flex',
-              alignItems: 'center', justifyContent: 'center',
-              fontSize: 12, fontWeight: 900, flexShrink: 0,
-            }}>7</span>
-            <h2 style={{ fontSize: 18, fontWeight: 900, color: '#000', margin: 0 }}>
-              GraphiQL Studio — Live Schema Explorer
-            </h2>
-            <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 100, border: '2px solid #EF4444', color: '#991B1B', background: !isLearning ? '#FEF2F2' : 'transparent', opacity: !isLearning ? 1 : 0.4 }}>🚀 Production</span>
-          </div>
-          <EmbeddedGraphiQL />
         </div>
       </div>
     </div>
