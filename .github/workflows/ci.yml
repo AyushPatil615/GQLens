@@ -34,7 +34,7 @@ jobs:
         run: npm run typecheck
 
       - name: Run smoke tests
-        run: npm test
+        run: npm run test:ci
 
   # ── Client: typecheck + build ────────────────────────────────────────
   client:

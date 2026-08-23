@@ -10,6 +10,7 @@
     "seed:postgres": "tsx src/db/seed_postgres.ts",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:ci": "vitest run --pool=forks",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],
