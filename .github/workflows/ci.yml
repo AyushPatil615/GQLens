@@ -26,6 +26,9 @@ jobs:
           cache: npm
           cache-dependency-path: server/package-lock.json
 
+      - name: Install native build tools (required for better-sqlite3)
+        run: sudo apt-get install -y python3 make g++
+
       - name: Install dependencies
         run: npm ci
 
