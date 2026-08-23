@@ -19,21 +19,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 22 LTS
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: server/package-lock.json
-
-      - name: Install native build tools (required for better-sqlite3)
-        run: sudo apt-get install -y python3 make g++
+          node-version: 22
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Rebuild native modules for Linux
-        run: npm rebuild better-sqlite3
+      - name: Rebuild all native modules for Linux
+        run: npm rebuild
 
       - name: Typecheck
         run: npm run typecheck
