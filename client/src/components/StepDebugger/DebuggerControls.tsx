@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import {
-  SkipBack, ChevronLeft, Play, Pause, ChevronRight, SkipForward, RotateCcw,
+  ChevronLeft, Play, Pause, ChevronRight, SkipForward, RotateCcw,
 } from 'lucide-react';
 
 interface Props {

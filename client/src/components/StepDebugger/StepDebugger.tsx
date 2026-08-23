@@ -93,8 +93,8 @@ export function StepDebugger() {
   const {
     allSteps, isRunning, isComplete, isError, errorMsg,
     runQuery, reset,
-    debuggerMode, setDebuggerMode,
-    currentStepIndex, setCurrentStepIndex,
+    setDebuggerMode,
+    currentStepIndex,
     isPaused, playbackSpeed, setPlaybackSpeed,
     debuggerIsAtEnd,
     stepNext, stepPrev, pause, resume, jumpToStep,
