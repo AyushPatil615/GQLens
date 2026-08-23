@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ci": "vitest run --pool=forks",
+    "test:smoke": "tsx --test tests/smoke.ci.ts",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],
