@@ -7,6 +7,9 @@
     <a href="https://graph-ql-omega.vercel.app">
       <img src="https://img.shields.io/badge/%F0%9F%9A%80_Live_Demo-graph--ql--omega.vercel.app-10B981?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo">
     </a>
+    <a href="https://github.com/AyushPatil615/GraphQL/actions/workflows/ci.yml">
+      <img src="https://github.com/AyushPatil615/GraphQL/actions/workflows/ci.yml/badge.svg" alt="CI">
+    </a>
   </p>
   <p align="center">
     <a href="https://graph-ql-omega.vercel.app">🌐 Try Live App</a> •
