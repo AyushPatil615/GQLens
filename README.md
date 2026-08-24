@@ -7,8 +7,8 @@
     <a href="https://graph-ql-omega.vercel.app">
       <img src="https://img.shields.io/badge/%F0%9F%9A%80_Live_Demo-graph--ql--omega.vercel.app-10B981?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo">
     </a>
-    <a href="https://github.com/AyushPatil615/GraphQL/actions/workflows/ci.yml">
-      <img src="https://github.com/AyushPatil615/GraphQL/actions/workflows/ci.yml/badge.svg" alt="CI">
+    <a href="https://github.com/AyushPatil615/GQLens/actions/workflows/ci.yml">
+      <img src="https://github.com/AyushPatil615/GQLens/actions/workflows/ci.yml/badge.svg" alt="CI">
     </a>
   </p>
   <p align="center">
@@ -583,8 +583,8 @@ GQLens supports a cloud architecture:
 
 ### 1. Clone & Install
 ```bash
-git clone https://github.com/AyushPatil615/GraphQL.git
-cd GraphQL
+git clone https://github.com/AyushPatil615/GQLens.git
+cd GQLens
 
 # Install server dependencies
 cd server && npm install
