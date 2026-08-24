@@ -81,7 +81,7 @@ GraphScope makes the abstract concrete:
 
 1. **😩 Act 1 — The Problem (REST)**: Interactive restaurant metaphor & real network waterfall demonstrating why REST APIs struggle with relational data, overfetching, and underfetching.
 2. **✨ Act 2 — The Solution (GraphQL)**: Live Query Builder, Mutation Editor, and procedural **3D Solar System Traversal** paired with the **Interactive AST Explorer**.
-3. **⚡ Act 3 — Going Deeper**: Five advanced visualizers — **N+1 Problem & DataLoader**, **Null Bubbling & `completeValue()`**, **Auth & Context Flow**, **Advanced Query Patterns (Variables, Fragments & Aliases)**, and **`GraphQLResolveInfo` Inspector**. Each streams real server events.
+3. **⚡ Act 3 — Going Deeper**: Eight advanced interactive modules in a **sidebar-navigated learning path** — **🐛 Step Debugger**, **N+1 Problem & DataLoader**, **Null Bubbling & `completeValue()`**, **Auth & Context Flow**, **Advanced Query Patterns (Variables, Fragments & Aliases)**, **`GraphQLResolveInfo` Inspector**, **Advanced Types**, and **Embedded GraphiQL Studio**. Each streams real server events.
 4. **🎯 Act 4 — Interactive Challenges**: 6 scenario-based quizzes that test learners on query multipliers, execution lifecycle order, null bubbling, and field collection directives.
 
 ---
@@ -218,6 +218,53 @@ Six nodes that light up as the server processes the query:
 ---
 
 ### Tab 3 — ⚡ Going Deeper
+
+#### 📌 Guided Learning Path (Sidebar Navigation)
+
+The **Going Deeper** tab features a sticky left-sidebar navigation so users always know where they are and what comes next — no endless scrolling:
+
+- **8 numbered modules** listed with a sublabel describing what each one teaches.
+- **Single content panel**: only the selected module is displayed — click to switch instantly.
+- **Active state highlights** the selected module with its unique accent color.
+- **Bottom Prev ← → Next navigation** with progress dots for linear walkthrough.
+- **Mode indicator dots** — purple for 🧠 Learning concepts, red for 🚀 Production engineering topics.
+
+---
+
+#### 0. 🐛 Step Debugger (Walk Through Real Execution)
+
+The **killer differentiator feature** — an interactive replay debugger that lets learners execute a real GraphQL query and step through every server-side execution stage one event at a time, exactly like a code debugger:
+
+```text
+Execute → [ parse ] → [ validate ] → [ auth:context ] → [ db:query ] → [ respond ]
+              ▲             ▲                ▲                ▲             ▲
+         Detailed       Detailed         Detailed          Detailed     Detailed
+       explanation    explanation      explanation       explanation  explanation
+```
+
+**5 Preset Queries to step through:**
+
+| Preset | Query | Steps it reveals |
+|---|---|---|
+| `List Students` | `{ students { id name age } }` | parse, validate, auth context, db:query, respond |
+| `Nested Query` | `{ student(id: "1") { name courses { title } } }` | resolver:info + multiple db queries |
+| `Auth Check` | `{ me { id name role } }` | auth:context:read + rejection on missing token |
+| `Login Mutation` | `mutation { login(...) { token user { role } } }` | auth:login + auth:token:issued |
+| `N+1 Problem` | `{ studentsN1 { courses { title } } }` | Individual db:query:n1:1…N firing per student |
+
+**Debugger Controls:**
+- `⏮ Restart` / `◀ Prev` / `▶ Play` / `⏸ Pause` / `Next ▶` / `⏭ End`
+- Speed selector: `0.5×` `1×` `2×` (auto-play between steps)
+- Animated progress bar and step counter (`03 / 05`)
+
+**Step Detail Panel (per step):**
+- Color-coded phase badge (Parse / Validate / Security / Auth / Resolver / Database / Response)
+- Lucide icon per step type (`ScanText` for parse, `Database` for db:query, `KeyRound` for auth, etc.)
+- 3-sentence plain-English explanation of exactly what GraphQL is doing at this stage
+- Server-emitted caption and timing from the real Apollo trace event
+- Click any completed step in the list to jump back and inspect it
+
+---
 
 #### 1. N+1 Problem & DataLoader Visualizer
 - Demonstrates how nested queries trigger $1 + N$ database queries when unbatched.
@@ -438,6 +485,12 @@ graphql_learner/
 │       │   ├── ResolveInfo/       # GraphQLResolveInfo 4th arg inspector
 │       │   ├── AdvancedTypes/     # Enums, Interfaces, Unions, Input Types & Directives
 │       │   ├── GraphiQL/          # Embedded GraphiQL Studio with 8 live presets
+│       │   ├── StepDebugger/      # Step-by-step execution replay debugger
+│       │   │   ├── StepDebugger.tsx   # Main component (preset selector, split layout)
+│       │   │   ├── StepList.tsx       # Left panel — numbered step pills with Lucide icons
+│       │   │   ├── StepDetail.tsx     # Right panel — phase badge, explanation, timing
+│       │   │   ├── DebuggerControls.tsx # Play/Pause/Prev/Next + speed + progress bar
+│       │   │   └── stepMeta.ts        # Step ID → icon, color, explanation map
 │       │   ├── MutationDemo/      # Mutation editor & SQL diff panel
 │       │   ├── PipelineVisualizer/# Animated 6-step node visualizer
 │       │   └── ExecutionTimeline/ # Horizontal timeline & Step Debugger toolbar
@@ -466,6 +519,7 @@ graphql_learner/
 | Layer | Technology | Purpose |
 |---|---|---|
 | **Frontend** | React 18 + TypeScript + Vite | Interactive UI & state management |
+| **Icons** | Lucide React | Step Debugger phase icons (Database, KeyRound, ScanText, Zap, etc.) |
 | **3D Graphics** | Three.js | Procedural planets & Catmull-Rom rocket flight curve |
 | **Animations** | Framer Motion | Fluid card transitions, toggle animations, timeline bars |
 | **Styling** | Vanilla CSS | Cream Neobrutalism design system — bold 3px borders, offset shadows |
