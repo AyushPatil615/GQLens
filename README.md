@@ -45,7 +45,7 @@
 ---
 
 <p align="center">
-  <img src="docs/demo.png" alt="GQLens Step Debugger — walking through parse → validate → db:query → respond" width="900">
+  <img src="docs/demo.gif" alt="GQLens Step Debugger — walking through parse → validate → db:query → respond" width="900">
 </p>
 
 ---
