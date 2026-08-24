@@ -41,6 +41,13 @@
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
 </p>
 
+
+---
+
+<p align="center">
+  <img src="docs/demo.png" alt="GraphScope Step Debugger — walking through parse → validate → db:query → respond" width="900">
+</p>
+
 ---
 
 ## 🌟 What is GraphScope?
