@@ -1,5 +1,5 @@
 /**
- * GraphScope — Security Controls
+ * GQLens — Security Controls
  *
  * 1. Query Depth Limiting   — prevents recursive/nested query abuse
  * 2. Query Complexity        — prevents expensive queries from running

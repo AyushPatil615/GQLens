@@ -1,7 +1,7 @@
 {
-  "name": "graphscope-server",
+  "name": "gqlens-server",
   "version": "1.0.0",
-  "description": "GraphScope v1 — Apollo Server backend with SQLite",
+  "description": "GQLens v1 — Apollo Server backend with SQLite",
   "main": "src/index.ts",
   "scripts": {
     "dev": "tsx watch src/index.ts",

@@ -173,7 +173,7 @@ export function useGraphQLTrace(query: string, domainId = 'education') {
 
     es.onerror = () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      console.warn('[GraphScope] SSE connection error');
+      console.warn('[GQLens] SSE connection error');
       setPhase('error');
       setErrorMsg('Could not connect to the server.');
       es.close();
@@ -205,7 +205,7 @@ export function useGraphQLTrace(query: string, domainId = 'education') {
     } catch (err) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       const msg = err instanceof Error ? err.message : 'Unknown error';
-      console.error('[GraphScope] GraphQL request failed:', msg);
+      console.error('[GQLens] GraphQL request failed:', msg);
       setPhase('error');
       setErrorMsg(`Failed to reach the server: ${msg}`);
       es.close();

@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">⬡ GraphScope</h1>
+  <h1 align="center">⬡ GQLens</h1>
   <p align="center">
     <strong>An interactive, visual 3D GraphQL learning platform that streams real execution traces from Apollo Server + PostgreSQL/SQLite.</strong>
   </p>
@@ -13,7 +13,7 @@
   </p>
   <p align="center">
     <a href="https://graph-ql-omega.vercel.app">🌐 Try Live App</a> •
-    <a href="#-what-is-graphscope">What is GraphScope</a> •
+    <a href="#-what-is-GQLens">What is GQLens</a> •
     <a href="#-the-learning-problem-it-solves">Problem It Solves</a> •
     <a href="#-the-4-act-learning-journey">4-Act Journey</a> •
     <a href="#-what-is-graphql-core-theory">GraphQL Theory</a> •
@@ -45,16 +45,16 @@
 ---
 
 <p align="center">
-  <img src="docs/demo.png" alt="GraphScope Step Debugger — walking through parse → validate → db:query → respond" width="900">
+  <img src="docs/demo.png" alt="GQLens Step Debugger — walking through parse → validate → db:query → respond" width="900">
 </p>
 
 ---
 
-## 🌟 What is GraphScope?
+## 🌟 What is GQLens?
 
-**GraphScope** is an open-source interactive learning playground built for developers who learn best by watching real systems execute in front of them.
+**GQLens** is an open-source interactive learning playground built for developers who learn best by watching real systems execute in front of them.
 
-GraphScope runs a **real Apollo Server v4 backend** (connected to local SQLite or cloud Supabase PostgreSQL) and streams every execution step to the browser over Server-Sent Events (SSE) in real time. The UI animates each step as it happens, explains what the step does, and shows the exact JSON that came back. No mocking, no fake timers — the pipeline you see is the pipeline that ran.
+GQLens runs a **real Apollo Server v4 backend** (connected to local SQLite or cloud Supabase PostgreSQL) and streams every execution step to the browser over Server-Sent Events (SSE) in real time. The UI animates each step as it happens, explains what the step does, and shows the exact JSON that came back. No mocking, no fake timers — the pipeline you see is the pipeline that ran.
 
 ---
 
@@ -62,7 +62,7 @@ GraphScope runs a **real Apollo Server v4 backend** (connected to local SQLite o
 
 Most GraphQL tutorials explain concepts with static diagrams or code blocks. A developer reads *"the resolver fetches data from the database"* but has no mental model of *when* that happens, *what triggered it*, or *what happens if they remove a field from the query*.
 
-GraphScope makes the abstract concrete:
+GQLens makes the abstract concrete:
 
 - **You see the pipeline light up step by step** as the server actually processes your query.
 - **You toggle a field off** (e.g. `courses`) and watch the Courses Resolver go dark — because the server literally never called it.
@@ -146,7 +146,7 @@ When you write a GraphQL query, the server cannot execute raw text directly. The
                                └── 🟢 Field: title
 ```
 
-GraphScope's **AST Explorer** renders this parsed hierarchy in real time:
+GQLens's **AST Explorer** renders this parsed hierarchy in real time:
 - **Color-Coded Badges**: Identifies Document, Operation, SelectionSet, Field, and Argument nodes.
 - **Interactive Collapsible Branches**: Expand (`▼`) or collapse (`▶`) individual subtrees.
 - **Live Sync**: Updates automatically as you toggle fields or edit queries.
@@ -371,7 +371,7 @@ A global sticky header toggle allowing users to switch the educational perspecti
 
 ### 🛡️ Production Security & Quality Controls
 
-GraphScope is built with production-grade GraphQL security controls to protect the public API from abuse:
+GQLens is built with production-grade GraphQL security controls to protect the public API from abuse:
 
 1. **🛡️ Query Depth Limiting (`graphql-depth-limit`)**:
    - Enforces a maximum execution depth of 8 levels.
@@ -538,7 +538,7 @@ graphql_learner/
 
 ## 🗄️ Database & Seed Data
 
-GraphScope includes support for both local embedded SQLite and cloud Supabase PostgreSQL:
+GQLens includes support for both local embedded SQLite and cloud Supabase PostgreSQL:
 
 ### Seed Datasets:
 - **Education Domain**:
@@ -554,7 +554,7 @@ GraphScope includes support for both local embedded SQLite and cloud Supabase Po
 
 ## ☁️ Distributed Cloud Deployment
 
-GraphScope supports a cloud architecture:
+GQLens supports a cloud architecture:
 
 ```text
  ┌─────────────────┐       GraphQL / SSE       ┌─────────────────┐

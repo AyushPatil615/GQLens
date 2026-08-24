@@ -32,7 +32,7 @@ const STEP_META: Record<string, StepMeta> = {
     lucideIcon: 'ShieldAlert',
     phase: 'Security', phaseColor: '#FECACA', color: '#FEE2E2', textColor: '#B91C1C',
     explanation:
-      'GraphScope calculates a complexity score — each field adds cost, nested lists multiply it. ' +
+      'GQLens calculates a complexity score — each field adds cost, nested lists multiply it. ' +
       'If the score exceeds the configured limit the request is rejected immediately. ' +
       'This protects the server from expensive denial-of-service queries.',
   },
@@ -105,7 +105,7 @@ const STEP_META: Record<string, StepMeta> = {
     phase: 'Database', phaseColor: '#FED7AA', color: '#FFEDD5', textColor: '#C2410C',
     explanation:
       'A SQL INSERT, UPDATE, or DELETE runs against the database. Mutations change server state. ' +
-      'GraphScope captures before and after snapshots so you can see exactly what changed.',
+      'GQLens captures before and after snapshots so you can see exactly what changed.',
   },
   'null:bubble:nullable': {
     lucideIcon: 'Droplets',

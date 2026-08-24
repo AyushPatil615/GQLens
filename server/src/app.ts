@@ -74,7 +74,7 @@ export async function buildApp() {
   app.get('/health', (_req, res) => {
     res.json({
       status:   'ok',
-      message:  'GraphScope server running',
+      message:  'GQLens server running',
       security: {
         maxQueryDepth:      MAX_QUERY_DEPTH,
         maxQueryComplexity: MAX_QUERY_COMPLEXITY,

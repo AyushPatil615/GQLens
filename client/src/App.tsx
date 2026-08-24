@@ -129,7 +129,7 @@ function AppInner() {
       }}>
         {/* Logo */}
         <span style={{ fontSize: 20, fontWeight: 900, fontFamily: 'var(--font-sans)', letterSpacing: '-0.5px', flexShrink: 0 }}>
-          ⬡ GraphScope
+          ⬡ GQLens
         </span>
 
         {/* Tab switcher */}

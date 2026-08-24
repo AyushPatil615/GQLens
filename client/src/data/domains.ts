@@ -216,7 +216,7 @@ const healthcareStepDialogues: StepDialogue[] = [
     whatItTakes:
       '• parent — null here (top-level query field)\n• args — { id: "p1" } (the argument from your query)\n• context — shared resources like your DB connection',
     whenYouSeeThis:
-      'This is proof that the GraphScope engine is domain-agnostic. The same pipeline, the same step numbering, the same visualizer — only the resolver function and the data shape change.',
+      'This is proof that the GQLens engine is domain-agnostic. The same pipeline, the same step numbering, the same visualizer — only the resolver function and the data shape change.',
     codeExample: `const resolvers = {\n  Query: {\n    patient: (parent, args, context) => {\n      return context.db.findPatient(args.id)\n    }\n  }\n}`,
   },
   {

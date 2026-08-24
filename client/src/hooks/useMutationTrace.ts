@@ -111,7 +111,7 @@ export function useMutationTrace(domainId = 'education') {
 
     es.onerror = () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      console.warn('[GraphScope] SSE connection error');
+      console.warn('[GQLens] SSE connection error');
       setPhase('error');
       setErrorMsg('Could not connect to the server.');
       es.close();
@@ -151,7 +151,7 @@ export function useMutationTrace(domainId = 'education') {
     } catch (err) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       const msg = err instanceof Error ? err.message : 'Unknown error';
-      console.error('[GraphScope] Mutation request failed:', msg);
+      console.error('[GQLens] Mutation request failed:', msg);
       setPhase('error');
       setErrorMsg(`Failed: ${msg}`);
       es.close();
