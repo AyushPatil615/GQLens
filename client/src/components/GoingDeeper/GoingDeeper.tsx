@@ -9,6 +9,7 @@ import { AdvancedTypesDemo }     from '../AdvancedTypes/AdvancedTypesDemo';
 import { EmbeddedGraphiQL }      from '../GraphiQL/EmbeddedGraphiQL';
 import { StepDebugger }          from '../StepDebugger/StepDebugger';
 import { useAppMode }            from '../../context/ModeContext';
+import { useSound }              from '../../context/SoundContext';
 
 // ── Section registry ─────────────────────────────────────────────────────────
 type SectionId =
@@ -87,9 +88,17 @@ const SECTIONS: Section[] = [
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export function GoingDeeper() {
-  const { mode }       = useAppMode();
-  const isLearning     = mode === 'learning';
+  const { mode }                = useAppMode();
+  const { playSound }           = useSound();
+  const isLearning              = mode === 'learning';
   const [activeId, setActiveId] = useState<SectionId>('debugger');
+
+  function handleSelectSection(id: SectionId) {
+    if (id !== activeId) {
+      playSound('step');
+      setActiveId(id);
+    }
+  }
 
   const active    = SECTIONS.find(s => s.id === activeId)!;
   const Active    = active.component;
@@ -185,7 +194,7 @@ export function GoingDeeper() {
             return (
               <motion.button
                 key={s.id}
-                onClick={() => setActiveId(s.id)}
+                onClick={() => handleSelectSection(s.id)}
                 whileTap={{ scale: 0.97 }}
                 style={{
                   display:       'flex',
@@ -352,7 +361,7 @@ export function GoingDeeper() {
                   {prev ? (
                     <motion.button
                       whileTap={{ scale: 0.97 }}
-                      onClick={() => setActiveId(prev.id)}
+                      onClick={() => handleSelectSection(prev.id)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 8,
                         padding: '8px 14px',
@@ -375,7 +384,7 @@ export function GoingDeeper() {
                     {SECTIONS.map(s => (
                       <button
                         key={s.id}
-                        onClick={() => setActiveId(s.id)}
+                        onClick={() => handleSelectSection(s.id)}
                         style={{
                           width: s.id === activeId ? 20 : 8,
                           height: 8, borderRadius: 99,
@@ -391,7 +400,7 @@ export function GoingDeeper() {
                   {next ? (
                     <motion.button
                       whileTap={{ scale: 0.97 }}
-                      onClick={() => setActiveId(next.id)}
+                      onClick={() => handleSelectSection(next.id)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 8,
                         padding: '8px 14px',

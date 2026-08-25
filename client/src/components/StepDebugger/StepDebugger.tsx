@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Bug, Play, ChevronDown } from 'lucide-react';
 import { useGraphQLTrace } from '../../hooks/useGraphQLTrace';
+import { useSound } from '../../context/SoundContext';
 import { StepList }           from './StepList';
 import { StepDetail }         from './StepDetail';
 import { DebuggerControls }   from './DebuggerControls';
@@ -87,6 +88,7 @@ export function StepDebugger() {
   const [presetId,     setPresetId]     = useState<PresetId>('students');
   const [showPresets,  setShowPresets]  = useState(false);
 
+  const { playSound } = useSound();
   const preset = PRESETS.find(p => p.id === presetId)!;
 
   const trace = useGraphQLTrace(preset.query, 'education');
@@ -102,23 +104,57 @@ export function StepDebugger() {
 
   const currentStep = allSteps[currentStepIndex] ?? null;
 
+  // Sound effect on query completion or error
+  const prevCompleteRef = useRef(false);
+  useEffect(() => {
+    if (isComplete && !prevCompleteRef.current) {
+      playSound('complete');
+    }
+    prevCompleteRef.current = isComplete;
+  }, [isComplete, playSound]);
+
+  useEffect(() => {
+    if (isError) {
+      playSound('error');
+    }
+  }, [isError, playSound]);
+
   function handleExecute() {
+    playSound('execute');
     setDebuggerMode(true);
     runQuery();
   }
 
   function handleRestart() {
+    playSound('reset');
     reset();
   }
 
   function handlePresetSelect(id: PresetId) {
+    playSound('toggle');
     setPresetId(id);
     setShowPresets(false);
     reset();
   }
 
   function handleJumpEnd() {
+    playSound('step');
     jumpToStep(allSteps.length - 1);
+  }
+
+  function handleStepNext() {
+    playSound('step');
+    stepNext();
+  }
+
+  function handleStepPrev() {
+    playSound('step');
+    stepPrev();
+  }
+
+  function handleJumpToStep(idx: number) {
+    playSound('step');
+    jumpToStep(idx);
   }
 
   return (
@@ -314,7 +350,7 @@ export function StepDebugger() {
             allSteps={allSteps}
             currentIndex={currentStepIndex}
             isComplete={isComplete}
-            onStepClick={jumpToStep}
+            onStepClick={handleJumpToStep}
           />
         </div>
 
@@ -335,8 +371,8 @@ export function StepDebugger() {
         isRunning={isRunning}
         debuggerIsAtEnd={debuggerIsAtEnd}
         playbackSpeed={playbackSpeed}
-        onPrev={stepPrev}
-        onNext={stepNext}
+        onPrev={handleStepPrev}
+        onNext={handleStepNext}
         onPlay={resume}
         onPause={pause}
         onRestart={handleRestart}

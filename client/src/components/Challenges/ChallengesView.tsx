@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSound } from '../../context/SoundContext';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 interface Challenge {
@@ -167,20 +168,28 @@ function Badge({ label, color }: { label: string; color: string }) {
 function ChallengeCard({ challenge, index }: { challenge: Challenge; index: number }) {
   const [selected, setSelected] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
+  const { playSound }           = useSound();
 
   const isCorrect = selected === challenge.correctIndex;
 
   function handleSelect(i: number) {
     if (revealed) return;
+    playSound('click');
     setSelected(i);
   }
 
   function handleReveal() {
     if (selected === null) return;
+    if (isCorrect) {
+      playSound('complete');
+    } else {
+      playSound('error');
+    }
     setRevealed(true);
   }
 
   function handleReset() {
+    playSound('reset');
     setSelected(null);
     setRevealed(false);
   }

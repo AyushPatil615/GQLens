@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getApiBaseUrl } from '../../config/api';
+import { useSound } from '../../context/SoundContext';
 
 // ─── Types ─────────────────────────────────────────────────────────────
 interface RunResult {
@@ -224,6 +225,7 @@ export function NullBubbleDemo() {
   const [result,    setResult]    = useState<RunResult | null>(null);
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState<string | null>(null);
+  const { playSound }             = useSound();
 
   const explain = EXPLANATIONS[mode][failState];
 
@@ -260,6 +262,13 @@ export function NullBubbleDemo() {
   }, []);
 
   const handleModeOrFail = (newMode: Mode, newFail: FailState) => {
+    if (newFail === 'fail') {
+      playSound('error');
+    } else if (newMode !== mode) {
+      playSound('toggle');
+    } else {
+      playSound('execute');
+    }
     setMode(newMode);
     setFailState(newFail);
     runQuery(newMode, newFail);

@@ -8,6 +8,8 @@ import { DOMAINS, getDomain } from './data/domains';
 import type { DomainId } from './data/domains';
 import { ModeProvider, useAppMode } from './context/ModeContext';
 import type { AppMode } from './context/ModeContext';
+import { SoundProvider, useSound } from './context/SoundContext';
+import { Volume2, VolumeX } from 'lucide-react';
 import './index.css';
 
 type Tab = 'rest' | 'graphql' | 'deeper' | 'challenges';
@@ -19,9 +21,56 @@ const TAB_CONFIG: { id: Tab; emoji: string; label: string }[] = [
   { id: 'challenges', emoji: '🎯', label: 'Challenges' },
 ];
 
+// ─── Sound Toggle Component ───────────────────────────────────────────────────
+function SoundToggle() {
+  const { soundEnabled, toggleSound, playSound } = useSound();
+
+  return (
+    <motion.button
+      onClick={() => {
+        const next = !soundEnabled;
+        toggleSound();
+        if (next) playSound('click');
+      }}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      title={soundEnabled ? 'Mute audio feedback' : 'Enable audio feedback'}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        background: soundEnabled ? '#F3F4F6' : '#FEF2F2',
+        border: `2px solid ${soundEnabled ? '#111827' : '#FCA5A5'}`,
+        borderRadius: 9,
+        padding: '5px 9px',
+        cursor: 'pointer',
+        fontSize: 11,
+        fontWeight: 800,
+        color: soundEnabled ? '#111827' : '#DC2626',
+        fontFamily: 'var(--font-sans)',
+        boxShadow: soundEnabled ? '2px 2px 0 #111827' : '2px 2px 0 #FCA5A5',
+        transition: 'all 0.15s ease',
+      }}
+    >
+      {soundEnabled ? (
+        <>
+          <Volume2 size={14} strokeWidth={2.5} />
+          <span style={{ fontSize: 10, letterSpacing: '0.04em' }}>SFX</span>
+        </>
+      ) : (
+        <>
+          <VolumeX size={14} strokeWidth={2.5} />
+          <span style={{ fontSize: 10, letterSpacing: '0.04em' }}>MUTED</span>
+        </>
+      )}
+    </motion.button>
+  );
+}
+
 // ─── Mode Toggle Component ────────────────────────────────────────────────────
 function ModeToggle() {
   const { mode, setMode } = useAppMode();
+  const { playSound } = useSound();
   const isLearning = mode === 'learning';
 
   const MODES: { key: AppMode; emoji: string; label: string; color: string; desc: string }[] = [
@@ -55,7 +104,10 @@ function ModeToggle() {
         {MODES.map(m => (
           <motion.button
             key={m.key}
-            onClick={() => setMode(m.key)}
+            onClick={() => {
+              setMode(m.key);
+              playSound('toggle');
+            }}
             whileTap={{ scale: 0.97 }}
             style={{
               padding: '5px 11px',
@@ -107,11 +159,12 @@ function ModeToggle() {
   );
 }
 
-// ─── Inner app (needs ModeProvider to be a parent) ───────────────────────────
+// ─── Inner app (needs ModeProvider and SoundProvider to be parents) ───────────
 function AppInner() {
-  const [tab, setTab]         = useState<Tab>('rest');
+  const [tab, setTab]           = useState<Tab>('rest');
   const [domainId, setDomainId] = useState<DomainId>('education');
-  const domain = getDomain(domainId);
+  const { playSound }           = useSound();
+  const domain                  = getDomain(domainId);
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column' }}>
@@ -137,7 +190,10 @@ function AppInner() {
           {TAB_CONFIG.map(t => (
             <motion.button
               key={t.id}
-              onClick={() => setTab(t.id)}
+              onClick={() => {
+                setTab(t.id);
+                playSound('tab');
+              }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               style={{
@@ -191,7 +247,10 @@ function AppInner() {
                 {DOMAINS.map(d => (
                   <motion.button
                     key={d.id}
-                    onClick={() => setDomainId(d.id)}
+                    onClick={() => {
+                      setDomainId(d.id);
+                      playSound('toggle');
+                    }}
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     title={d.description}
@@ -218,8 +277,11 @@ function AppInner() {
           )}
         </AnimatePresence>
 
-        {/* Mode Toggle — always visible */}
-        <ModeToggle />
+        {/* Right Controls: Sound Toggle + Mode Toggle */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <SoundToggle />
+          <ModeToggle />
+        </div>
       </header>
 
       {/* ── Active page ── */}
@@ -233,7 +295,10 @@ function AppInner() {
           style={{ flex: 1 }}
         >
           {tab === 'rest'
-            ? <RestComparison onTryDemo={() => setTab('graphql')} />
+            ? <RestComparison onTryDemo={() => {
+                setTab('graphql');
+                playSound('tab');
+              }} />
             : tab === 'graphql'
               ? <FakeDemo domain={domain} />
               : tab === 'deeper'
@@ -246,11 +311,13 @@ function AppInner() {
   );
 }
 
-// ─── Root export (wraps in ModeProvider) ─────────────────────────────────────
+// ─── Root export (wraps in SoundProvider & ModeProvider) ─────────────────────
 export default function App() {
   return (
-    <ModeProvider>
-      <AppInner />
-    </ModeProvider>
+    <SoundProvider>
+      <ModeProvider>
+        <AppInner />
+      </ModeProvider>
+    </SoundProvider>
   );
 }

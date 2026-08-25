@@ -369,6 +369,16 @@ A global sticky header toggle allowing users to switch the educational perspecti
 
 ---
 
+### 🔊 Interactive Audio & Haptic Micro-Feedback Engine
+Synthesized in real time using the browser's **Web Audio API** (`AudioContext`) with zero external sound file downloads and 0ms latency:
+- **Tactile Step Clicks**: Subtle mechanical frequency blips on Step Debugger steps, timeline jumps, and sidebar navigation.
+- **Toggle Snaps**: Dynamic two-tone acoustic snaps on Mode switches, Domain switches, and DataLoader state toggles.
+- **Execution & Sweep Cues**: Ascending frequency sweep when firing live GraphQL operations.
+- **Harmonic Chimes & Error Thuds**: Soft harmonic major chords on successful completions and low resonant drops on error triggers & null bubbling.
+- **Navbar SFX Mute Control**: Instant sound toggle (`SFX` / `MUTED`) with state persisted in `localStorage`.
+
+---
+
 ### 🛡️ Production Security & Quality Controls
 
 GQLens is built with production-grade GraphQL security controls to protect the public API from abuse:

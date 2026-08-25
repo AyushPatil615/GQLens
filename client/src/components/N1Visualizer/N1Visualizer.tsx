@@ -1,6 +1,7 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getApiBaseUrl } from '../../config/api';
+import { useSound } from '../../context/SoundContext';
 
 // ─── Types ─────────────────────────────────────────────────────────────
 interface DbQueryEvent {
@@ -41,6 +42,7 @@ export function N1Visualizer() {
   const [phase, setPhase] = useState<Phase>('idle');
   const [events, setEvents] = useState<DbQueryEvent[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { playSound } = useSound();
   const esRef = useRef<EventSource | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const eventIndexRef = useRef(0);
@@ -48,6 +50,21 @@ export function N1Visualizer() {
   const isRunning  = phase === 'running';
   const isComplete = phase === 'complete';
   const isError    = phase === 'error';
+
+  // Play sound on completion / error
+  const prevCompleteRef = useRef(false);
+  useEffect(() => {
+    if (isComplete && !prevCompleteRef.current) {
+      playSound('complete');
+    }
+    prevCompleteRef.current = isComplete;
+  }, [isComplete, playSound]);
+
+  useEffect(() => {
+    if (isError) {
+      playSound('error');
+    }
+  }, [isError, playSound]);
 
   const reset = useCallback(() => {
     esRef.current?.close();
@@ -157,6 +174,7 @@ export function N1Visualizer() {
 
   function handleToggle() {
     if (!isRunning) {
+      playSound('toggle');
       const next = !dataLoaderEnabled;
       setDataLoaderEnabled(next);
       reset();
@@ -165,6 +183,7 @@ export function N1Visualizer() {
 
   function handleRunClick() {
     if (isRunning) return;
+    playSound('execute');
     if (isComplete || isError) {
       reset();
       setTimeout(() => runDemo(dataLoaderEnabled), 20);
