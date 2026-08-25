@@ -10,7 +10,6 @@ import { ModeProvider, useAppMode } from './context/ModeContext';
 import type { AppMode } from './context/ModeContext';
 import { SoundProvider, useSound } from './context/SoundContext';
 import { Volume2, VolumeX } from 'lucide-react';
-import { FloatingRockets } from './components/common/FloatingRockets';
 import './index.css';
 
 type Tab = 'rest' | 'graphql' | 'deeper' | 'challenges';
@@ -168,9 +167,7 @@ function AppInner() {
   const domain                  = getDomain(domainId);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      {/* ── Ambient floating minimalist rockets ── */}
-      <FloatingRockets />
+    <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column' }}>
 
       {/* ── Shared sticky header ── */}
       <header className="gs-header" style={{
