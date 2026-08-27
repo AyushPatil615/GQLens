@@ -8,13 +8,14 @@ import { ResolveInfoInspector }  from '../ResolveInfo/ResolveInfoInspector';
 import { AdvancedTypesDemo }     from '../AdvancedTypes/AdvancedTypesDemo';
 import { EmbeddedGraphiQL }      from '../GraphiQL/EmbeddedGraphiQL';
 import { StepDebugger }          from '../StepDebugger/StepDebugger';
+import { FederationDemo }        from '../Federation/FederationDemo';
 import { useAppMode }            from '../../context/ModeContext';
 import { useSound }              from '../../context/SoundContext';
 
 // ── Section registry ─────────────────────────────────────────────────────────
 type SectionId =
   | 'n1' | 'null' | 'auth' | 'queries'
-  | 'resolve' | 'types' | 'graphiql' | 'debugger';
+  | 'resolve' | 'types' | 'graphiql' | 'debugger' | 'federation';
 
 interface Section {
   id:        SectionId;
@@ -83,6 +84,13 @@ const SECTIONS: Section[] = [
     sublabel: 'Live schema explorer & query IDE',
     badge: 'production', color: '#EC4899',
     component: EmbeddedGraphiQL,
+  },
+  {
+    id: 'federation', num: 9,
+    icon: '🌐', label: 'Federation & Subgraphs',
+    sublabel: 'One API across many services',
+    badge: 'production', color: '#4F46E5',
+    component: FederationDemo,
   },
 ];
 
