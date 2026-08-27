@@ -205,7 +205,6 @@ const NETFLIX_PANELS = [
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 function ArchDiagram({ runningStep }: { runningStep: number }) {
-  // Which nodes light up at each step
   const activeNodes: Record<number, string[]> = {
     0: ['client', 'gateway'],
     1: ['gateway'],
@@ -217,63 +216,76 @@ function ArchDiagram({ runningStep }: { runningStep: number }) {
   const lit = runningStep >= 0 ? activeNodes[runningStep] ?? [] : [];
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: 200, userSelect: 'none' }}>
-      {/* Client node */}
-      <Node label="Client" emoji="🌐" active={lit.includes('client')} color="#6366F1"
-        style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }} />
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 0,
+      width: '100%',
+      userSelect: 'none',
+      padding: '8px 0',
+    }}>
 
-      {/* Arrow client → gateway */}
-      <Arrow active={runningStep === 0} style={{ position: 'absolute', left: 88, top: '50%', width: 60, transform: 'translateY(-50%)' }} />
+      {/* ── Col 1: Client ── */}
+      <Node label="Client" emoji="🌐" active={lit.includes('client')} color="#6366F1" />
 
-      {/* Gateway */}
-      <Node label="Gateway :4000" emoji="⬡" active={runningStep >= 0} color="#000"
-        style={{ position: 'absolute', left: 148, top: '50%', transform: 'translateY(-50%)' }} />
+      {/* ── Arrow: client → gateway ── */}
+      <FlexArrow active={runningStep === 0} />
 
-      {/* Arrows gateway → subgraphs */}
-      <Arrow active={lit.includes('users')} style={{ position: 'absolute', left: 250, top: 30, width: 60, transform: 'rotate(-20deg)', transformOrigin: 'left center' }} />
-      <Arrow active={lit.includes('users') || lit.includes('products')} style={{ position: 'absolute', left: 252, top: '50%', width: 58, transform: 'translateY(-50%)' }} />
-      <Arrow active={lit.includes('orders')} style={{ position: 'absolute', left: 250, top: 145, width: 60, transform: 'rotate(20deg)', transformOrigin: 'left center' }} />
+      {/* ── Col 2: Gateway ── */}
+      <Node label="Gateway :4000" emoji="⬡" active={runningStep >= 0} color="#000" />
 
-      {/* Subgraph nodes */}
-      <Node label="Users :4001" emoji="👤" active={lit.includes('users')} color="#6366F1"
-        style={{ position: 'absolute', right: 0, top: 12 }} />
-      <Node label="Products :4002" emoji="📦" active={false} color="#F59E0B"
-        style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)' }} />
-      <Node label="Orders :4003" emoji="🛒" active={lit.includes('orders')} color="#10B981"
-        style={{ position: 'absolute', right: 0, bottom: 12 }} />
+      {/* ── Arrow: gateway → subgraphs ── */}
+      <FlexArrow active={runningStep >= 1} />
+
+      {/* ── Col 3: three subgraph nodes stacked ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+        <Node label="Users :4001"    emoji="👤" active={lit.includes('users')}    color="#6366F1" size="sm" />
+        <Node label="Products :4002" emoji="📦" active={false}                   color="#F59E0B" size="sm" />
+        <Node label="Orders :4003"   emoji="🛒" active={lit.includes('orders')}  color="#10B981" size="sm" />
+      </div>
+
     </div>
   );
 }
 
-function Node({ label, emoji, active, color, style }: {
-  label: string; emoji: string; active: boolean; color: string; style?: React.CSSProperties;
+function Node({
+  label, emoji, active, color, size = 'md', style,
+}: {
+  label: string; emoji: string; active: boolean; color: string;
+  size?: 'md' | 'sm'; style?: React.CSSProperties;
 }) {
+  const sz = size === 'sm' ? 38 : 48;
+  const fs = size === 'sm' ? 16 : 20;
+  const ls = size === 'sm' ? 8  : 9;
+
   return (
     <motion.div
-      animate={{ scale: active ? 1.06 : 1 }}
+      animate={{ scale: active ? 1.07 : 1 }}
       transition={{ duration: 0.2 }}
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        gap: 4, width: 90, ...style,
+        gap: 4, minWidth: size === 'sm' ? 76 : 90, flexShrink: 0,
+        ...style,
       }}
     >
       <div style={{
-        width: 48, height: 48, borderRadius: 12,
+        width: sz, height: sz, borderRadius: 10,
         background: active ? color : '#F3F4F6',
         border: `2.5px solid ${active ? color : '#E5E7EB'}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 20,
+        fontSize: fs,
         boxShadow: active ? `3px 3px 0 ${color}55` : '2px 2px 0 #E5E7EB',
         transition: 'all 0.2s',
       }}>
         {emoji}
       </div>
       <span style={{
-        fontSize: 9, fontWeight: 800, textAlign: 'center',
+        fontSize: ls, fontWeight: 800, textAlign: 'center',
         color: active ? color : '#9CA3AF',
         fontFamily: 'var(--font-mono)',
         transition: 'color 0.2s',
-        lineHeight: 1.2,
+        lineHeight: 1.3,
+        maxWidth: 84,
       }}>
         {label}
       </span>
@@ -281,14 +293,14 @@ function Node({ label, emoji, active, color, style }: {
   );
 }
 
-function Arrow({ active, style }: { active: boolean; style?: React.CSSProperties }) {
+function FlexArrow({ active }: { active: boolean }) {
   return (
-    <div style={{ height: 2, ...style }}>
+    <div style={{ flex: 1, height: 2, minWidth: 24, position: 'relative' }}>
       <motion.div
-        animate={{ opacity: active ? 1 : 0.2, scaleX: active ? 1 : 0.85 }}
+        animate={{ opacity: active ? 1 : 0.18, scaleX: active ? 1 : 0.8 }}
         transition={{ duration: 0.2 }}
         style={{
-          height: '100%', width: '100%',
+          width: '100%', height: '100%',
           background: active
             ? 'linear-gradient(90deg, #6366F1, #10B981)'
             : '#E5E7EB',
@@ -297,20 +309,20 @@ function Arrow({ active, style }: { active: boolean; style?: React.CSSProperties
           position: 'relative',
         }}
       >
-        {/* Arrowhead */}
         <div style={{
           position: 'absolute', right: -1, top: '50%',
           transform: 'translateY(-50%)',
           width: 0, height: 0,
           borderTop: '4px solid transparent',
           borderBottom: '4px solid transparent',
-          borderLeft: `5px solid ${active ? '#10B981' : '#E5E7EB'}`,
+          borderLeft: `6px solid ${active ? '#10B981' : '#E5E7EB'}`,
           transition: 'border-color 0.2s',
         }} />
       </motion.div>
     </div>
   );
 }
+
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
