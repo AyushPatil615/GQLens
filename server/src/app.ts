@@ -2,6 +2,10 @@
  * app.ts — Express + Apollo factory (no listen call).
  * Imported by index.ts (production) and tests (which bind their own port).
  */
+
+// Load .env FIRST — before any import that reads process.env (e.g. jwt.ts)
+import 'dotenv/config';
+
 import dns from 'dns';
 if (dns.setDefaultResultOrder) dns.setDefaultResultOrder('ipv4first');
 
